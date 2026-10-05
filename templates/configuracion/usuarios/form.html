@@ -1,0 +1,238 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo usuario | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nuevo usuario
+        </h1>
+
+        <p class="page-description">
+            Registra una persona como usuario del sistema.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información personal
+            </h5>
+
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+
+                    <label
+                        for="nombre_1"
+                        class="form-label"
+                    >
+                        Primer nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre_1"
+                        name="nombre_1"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="nombre_2"
+                        class="form-label"
+                    >
+                        Segundo nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre_2"
+                        name="nombre_2"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="apellido_1"
+                        class="form-label"
+                    >
+                        Primer apellido
+                    </label>
+
+                    <input
+                        type="text"
+                        id="apellido_1"
+                        name="apellido_1"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="apellido_2"
+                        class="form-label"
+                    >
+                        Segundo apellido
+                    </label>
+
+                    <input
+                        type="text"
+                        id="apellido_2"
+                        name="apellido_2"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-5">
+
+                    <label
+                        for="correo"
+                        class="form-label"
+                    >
+                        Correo
+                    </label>
+
+                    <input
+                        type="email"
+                        id="correo"
+                        name="correo"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="telefono"
+                        class="form-label"
+                    >
+                        Teléfono
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="telefono"
+                        name="telefono"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="persona_estado"
+                        class="form-label"
+                    >
+                        Estado de la persona
+                    </label>
+
+                    <input
+                        type="text"
+                        id="persona_estado"
+                        name="persona_estado"
+                        class="form-control"
+                        placeholder="Estado"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información del usuario
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="estado"
+                        class="form-label"
+                    >
+                        Estado
+                    </label>
+
+                    <input
+                        type="text"
+                        id="estado"
+                        name="estado"
+                        class="form-control"
+                        placeholder="Estado"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('configuracion.usuarios') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar usuario
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

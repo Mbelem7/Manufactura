@@ -1,0 +1,249 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo producto | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            Nuevo producto
+        </h1>
+
+        <p class="page-description">
+            Registra la información general, comercial y de inventario del producto.
+        </p>
+    </div>
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información general
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. PRD-001"
+                        required
+                    >
+                </div>
+
+
+                <div class="col-md-8">
+                    <label
+                        for="nombre"
+                        class="form-label"
+                    >
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre"
+                        name="nombre"
+                        class="form-control"
+                        placeholder="Nombre del producto"
+                        required
+                    >
+                </div>
+
+
+                <div class="col-md-4">
+                    <label
+                        for="tipo_producto"
+                        class="form-label"
+                    >
+                        Tipo de producto
+                    </label>
+
+                    <input
+                        type="text"
+                        id="tipo_producto"
+                        name="tipo_producto"
+                        class="form-control"
+                        placeholder="Tipo de producto"
+                        required
+                    >
+                </div>
+
+
+                <div class="col-md-4">
+                    <label
+                        for="presentacion"
+                        class="form-label"
+                    >
+                        Presentación
+                    </label>
+
+                    <input
+                        type="text"
+                        id="presentacion"
+                        name="presentacion"
+                        class="form-control"
+                        placeholder="Ej. Caja, unidad, paquete"
+                    >
+                </div>
+
+
+                <div class="col-md-4">
+                    <label
+                        for="unidad_medida"
+                        class="form-label"
+                    >
+                        Unidad de medida
+                    </label>
+
+                    <input
+                        type="text"
+                        id="unidad_medida"
+                        name="unidad_medida"
+                        class="form-control"
+                        placeholder="Ej. Unidad, kg, litro"
+                        required
+                    >
+                </div>
+
+
+                <div class="col-md-4">
+                    <label
+                        for="costo"
+                        class="form-label"
+                    >
+                        Costo
+                    </label>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">
+                            C$
+                        </span>
+
+                        <input
+                            type="number"
+                            id="costo"
+                            name="costo"
+                            class="form-control"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            required
+                        >
+
+                    </div>
+                </div>
+
+
+                <div class="col-md-4">
+                    <label
+                        for="precio"
+                        class="form-label"
+                    >
+                        Precio
+                    </label>
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">
+                            C$
+                        </span>
+
+                        <input
+                            type="number"
+                            id="precio"
+                            name="precio"
+                            class="form-control"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            required
+                        >
+
+                    </div>
+                </div>
+
+
+                <div class="col-md-4">
+                    <label
+                        for="estado"
+                        class="form-label"
+                    >
+                        Estado
+                    </label>
+
+                    <input
+                        type="text"
+                        id="estado"
+                        name="estado"
+                        class="form-control"
+                        placeholder="Estado"
+                        required
+                    >
+                </div>
+
+
+                <div class="col-12">
+                    <label
+                        for="descripcion"
+                        class="form-label"
+                    >
+                        Descripción
+                    </label>
+
+                    <textarea
+                        id="descripcion"
+                        name="descripcion"
+                        class="form-control"
+                        rows="4"
+                        placeholder="Descripción del producto..."
+                    ></textarea>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+           href="{{ url_for('inventario.productos') }}" class="btn btn-light">
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar producto
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

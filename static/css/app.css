@@ -1,0 +1,526 @@
+:root {
+    --app-background: #f4f5f7;
+    --app-surface: #ffffff;
+
+    --app-border: #e3e5e8;
+
+    --app-text: #25282d;
+    --app-text-muted: #747983;
+
+    --app-primary: #714b67;
+    --app-primary-hover: #5f3f58;
+
+    --app-primary-soft: #f1e9ef;
+    --app-primary-soft-hover: #eadde6;
+
+    --app-success: #5f8f74;
+    --app-warning: #b9894c;
+    --app-danger: #b85c5c;
+
+    --navbar-height: 64px;
+}
+
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+
+    background-color: var(--app-background);
+
+    color: var(--app-text);
+
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+a {
+    text-decoration: none;
+}
+
+
+/* =========================================================
+   APP LAYOUT
+   ========================================================= */
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
+
+    margin-left: 260px;
+}
+
+.app-content {
+    padding: 20px 28px;
+}
+
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+
+.app-navbar {
+    min-height: var(--navbar-height);
+
+    background-color: #ffffff;
+
+    border-bottom: 1px solid var(--app-border);
+
+    position: sticky;
+    top: 0;
+
+    z-index: 900;
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+    border-radius: 8px;
+
+    background-color: transparent;
+
+    color: var(--app-text-muted);
+
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.btn-icon:hover {
+    background-color: var(--app-primary-soft);
+
+    color: var(--app-primary);
+}
+
+.app-user-menu {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    border: 0;
+
+    background-color: transparent;
+}
+
+.app-user-avatar {
+    width: 34px;
+    height: 34px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background-color: var(--app-primary-soft);
+
+    color: var(--app-primary);
+
+    border: 1px solid #e3d5df;
+}
+
+
+/* =========================================================
+   PAGE HEADER
+   ========================================================= */
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+.page-title {
+    margin: 0;
+
+    font-size: 1.45rem;
+    font-weight: 650;
+
+    color: #292b30;
+}
+
+.page-description {
+    margin: 4px 0 0;
+
+    color: var(--app-text-muted);
+
+    font-size: 0.94rem;
+}
+
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.app-card {
+    background-color: var(--app-surface);
+
+    border: 1px solid var(--app-border);
+    border-radius: 9px;
+
+    box-shadow:
+        0 1px 2px rgba(31, 41, 55, 0.02);
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.btn-primary {
+    --bs-btn-bg: var(--app-primary);
+    --bs-btn-border-color: var(--app-primary);
+
+    --bs-btn-hover-bg: var(--app-primary-hover);
+    --bs-btn-hover-border-color: var(--app-primary-hover);
+
+    --bs-btn-active-bg: var(--app-primary-hover);
+    --bs-btn-active-border-color: var(--app-primary-hover);
+
+    --bs-btn-disabled-bg: #9c8797;
+    --bs-btn-disabled-border-color: #9c8797;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--app-primary);
+    --bs-btn-border-color: #cbbac5;
+
+    --bs-btn-hover-bg: var(--app-primary-soft);
+    --bs-btn-hover-border-color: var(--app-primary);
+
+    --bs-btn-hover-color: var(--app-primary);
+
+    --bs-btn-active-bg: var(--app-primary-soft-hover);
+    --bs-btn-active-border-color: var(--app-primary);
+
+    --bs-btn-active-color: var(--app-primary);
+}
+
+.btn-light {
+    --bs-btn-bg: #ffffff;
+    --bs-btn-border-color: var(--app-border);
+
+    --bs-btn-hover-bg: #f7f7f8;
+    --bs-btn-hover-border-color: #d6d9dd;
+
+    --bs-btn-color: #42464d;
+}
+
+
+/* =========================================================
+   FORMS
+   ========================================================= */
+
+.app-content form .app-card {
+    margin-bottom: 12px !important;
+}
+
+.app-content form .app-card > .p-4,
+.app-content form .app-card > .p-3 {
+    padding: 14px !important;
+}
+
+.app-content form .app-card h5 {
+    margin-bottom: 12px !important;
+
+    font-size: 1.03rem;
+    font-weight: 600;
+
+    color: #35383d;
+}
+
+.app-content form .row.g-3 {
+    --bs-gutter-y: 0.75rem;
+}
+
+.app-content form .form-label {
+    margin-bottom: 4px;
+
+    font-size: 0.89rem;
+    font-weight: 500;
+
+    color: #42464d;
+}
+
+
+/* =========================================================
+   FORM CONTROLS
+   ========================================================= */
+
+.form-control,
+.form-select {
+    border-color: var(--app-border);
+
+    border-radius: 7px;
+
+    color: var(--app-text);
+
+    background-color: #ffffff;
+}
+
+.form-control:hover,
+.form-select:hover {
+    border-color: #d3c9d0;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--app-primary);
+
+    box-shadow:
+        0 0 0 0.18rem
+        rgba(113, 75, 103, 0.10);
+}
+
+.input-group-text {
+    border-color: var(--app-border);
+
+    background-color: #fafafa;
+
+    color: var(--app-text-muted);
+}
+
+
+/* =========================================================
+   TABLES
+   ========================================================= */
+
+.app-card .table {
+    margin-bottom: 0;
+}
+
+.app-card .table thead th {
+    padding: 10px 12px;
+
+    background-color: #fafafa;
+
+    color: #44484f;
+
+    font-size: 0.84rem;
+    font-weight: 600;
+
+    border-bottom: 1px solid var(--app-border);
+
+    white-space: nowrap;
+}
+
+.app-card .table tbody td {
+    padding: 10px 12px;
+
+    vertical-align: middle;
+
+    font-size: 0.9rem;
+
+    border-color: #edf0f2;
+}
+
+.app-card .table tbody tr:hover {
+    background-color: #faf8fa;
+}
+
+
+/* =========================================================
+   LIST TOOLBAR
+   ========================================================= */
+
+.list-toolbar {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 10px 12px;
+
+    border-bottom: 1px solid var(--app-border);
+
+    background-color: #ffffff;
+}
+
+.list-search {
+    width: 100%;
+    max-width: 420px;
+}
+
+.list-search .form-control,
+.list-search .input-group-text {
+    height: 38px;
+}
+
+.list-filter {
+    width: 200px;
+}
+
+
+/* =========================================================
+   EMPTY STATES
+   ========================================================= */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 140px;
+
+    padding: 22px;
+
+    text-align: center;
+
+    color: var(--app-text-muted);
+}
+
+.empty-state i {
+    margin-bottom: 8px;
+
+    font-size: 1.6rem;
+
+    color: #a890a1;
+}
+
+.empty-state-title {
+    margin: 0;
+
+    font-size: 0.94rem;
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.badge-soft-primary {
+    background-color: var(--app-primary-soft);
+
+    color: var(--app-primary);
+
+    border: 1px solid #e0d2dc;
+}
+
+.badge-soft-success {
+    background-color: #eaf4ee;
+
+    color: var(--app-success);
+
+    border: 1px solid #d4e7dc;
+}
+
+.badge-soft-warning {
+    background-color: #fbf3e8;
+
+    color: var(--app-warning);
+
+    border: 1px solid #f0dfc3;
+}
+
+.badge-soft-danger {
+    background-color: #f8eaea;
+
+    color: var(--app-danger);
+
+    border: 1px solid #edd1d1;
+}
+
+
+/* =========================================================
+   TEXT HELPERS
+   ========================================================= */
+
+.text-muted {
+    color: var(--app-text-muted) !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 991.98px) {
+
+    .app-main {
+        margin-left: 0;
+    }
+
+    .app-content {
+        padding: 16px;
+    }
+
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-header .btn {
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width: 767.98px) {
+
+    .list-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .list-search,
+    .list-filter {
+        width: 100%;
+        max-width: none;
+    }
+
+}
+
+
+@media (max-width: 575.98px) {
+
+    .app-content {
+        padding: 12px;
+    }
+
+    .page-title {
+        font-size: 1.3rem;
+    }
+
+    .app-content form .app-card > .p-4,
+    .app-content form .app-card > .p-3 {
+        padding: 0.85rem !important;
+    }
+
+}

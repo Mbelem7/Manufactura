@@ -1,0 +1,262 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nueva recepción | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nueva recepción
+        </h1>
+
+        <p class="page-description">
+            Registra los productos recibidos de una orden de compra.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información general
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. REC-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="ordenc_id"
+                        class="form-label"
+                    >
+                        Orden de compra
+                    </label>
+
+                    <select
+                        id="ordenc_id"
+                        name="ordenc_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione una orden de compra
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="almacen_id"
+                        class="form-label"
+                    >
+                        Almacén destino
+                    </label>
+
+                    <select
+                        id="almacen_id"
+                        name="almacen_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione un almacén
+                        </option>
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+
+                <div>
+                    <h5 class="mb-1">
+                        Productos recibidos
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Registra los productos, lotes y cantidades recibidas.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    id="addReceptionItemButton"
+                >
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Agregar producto
+                </button>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">
+                                Producto
+                            </th>
+
+                            <th style="width: 30%;">
+                                Lote
+                            </th>
+
+                            <th style="width: 20%;">
+                                Cantidad
+                            </th>
+
+                            <th
+                                style="width: 10%;"
+                                class="text-end"
+                            >
+                                Acción
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="receptionItemsTableBody">
+
+                        <tr class="reception-item-row">
+
+                            <td>
+                                <select
+                                    name="producto_id[]"
+                                    class="form-select"
+                                    required
+                                >
+                                    <option value="">
+                                        Seleccione un producto
+                                    </option>
+                                </select>
+                            </td>
+
+
+                            <td>
+                                <select
+                                    name="lote_id[]"
+                                    class="form-select"
+                                    required
+                                >
+                                    <option value="">
+                                        Seleccione un lote
+                                    </option>
+                                </select>
+                            </td>
+
+
+                            <td>
+                                <input
+                                    type="number"
+                                    name="cantidad[]"
+                                    class="form-control"
+                                    min="0.01"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    required
+                                >
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger btn-sm remove-reception-item"
+                                    title="Eliminar producto"
+                                >
+                                    <i class="bi bi-trash"></i>
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('compras.recepciones') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar recepción
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', filename='js/recepcion-form.js') }}">
+</script>
+
+{% endblock %}

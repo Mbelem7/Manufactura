@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}Manufactura{% endblock %}
+    </title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/app.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/sidebar.css') }}"
+    >
+
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    {% include "components/sidebar.html" %}
+
+    <div class="app-main">
+
+        {% include "components/navbar.html" %}
+
+        <main class="app-content">
+
+            {% include "components/alerts.html" %}
+
+            {% block content %}{% endblock %}
+
+        </main>
+
+    </div>
+
+</div>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/sidebar.js') }}">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/app.js') }}">
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

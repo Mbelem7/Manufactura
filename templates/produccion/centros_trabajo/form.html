@@ -1,0 +1,146 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo centro de trabajo | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nuevo centro de trabajo
+        </h1>
+
+        <p class="page-description">
+            Registra un centro de trabajo utilizado en producción.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información general
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. CT-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="nombre"
+                        class="form-label"
+                    >
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre"
+                        name="nombre"
+                        class="form-control"
+                        placeholder="Ej. Área de corte"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="maquina"
+                        class="form-label"
+                    >
+                        Máquina
+                    </label>
+
+                    <input
+                        type="text"
+                        id="maquina"
+                        name="maquina"
+                        class="form-control"
+                        placeholder="Ej. Sierra industrial"
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="estado"
+                        class="form-label"
+                    >
+                        Estado
+                    </label>
+
+                    <input
+                        type="text"
+                        id="estado"
+                        name="estado"
+                        class="form-control"
+                        placeholder="Estado"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('produccion.centros_trabajo') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar centro de trabajo
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nueva ruta de operación | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nueva ruta de operación
+        </h1>
+
+        <p class="page-description">
+            Registra una operación asociada a una orden de producción.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información de la operación
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. RUT-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="ordenp_id"
+                        class="form-label"
+                    >
+                        Orden de producción
+                    </label>
+
+                    <select
+                        id="ordenp_id"
+                        name="ordenp_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione una orden de producción
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label
+                        for="centro_id"
+                        class="form-label"
+                    >
+                        Centro de trabajo
+                    </label>
+
+                    <select
+                        id="centro_id"
+                        name="centro_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione un centro de trabajo
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="secuencia"
+                        class="form-label"
+                    >
+                        Secuencia
+                    </label>
+
+                    <input
+                        type="number"
+                        id="secuencia"
+                        name="secuencia"
+                        class="form-control"
+                        min="1"
+                        step="1"
+                        placeholder="Ej. 1"
+                        required
+                    >
+
+                    <div class="form-text">
+                        Define el orden de ejecución.
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="tiempo_estandar"
+                        class="form-label"
+                    >
+                        Tiempo estándar
+                    </label>
+
+                    <div class="input-group">
+
+                        <input
+                            type="number"
+                            id="tiempo_estandar"
+                            name="tiempo_estandar"
+                            class="form-control"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            required
+                        >
+
+                        <span class="input-group-text">
+                            min
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('produccion.rutas') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar ruta
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

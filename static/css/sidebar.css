@@ -1,0 +1,223 @@
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar {
+    width: 260px;
+    height: 100vh;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: #fbfbfc;
+
+    border-right: 1px solid #e2e4e8;
+
+    z-index: 1000;
+
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #d6d8dc transparent;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.sidebar-header {
+    height: 64px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 20px;
+
+    background-color: #ffffff;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-brand {
+    color: #2f2830;
+
+    font-size: 1.05rem;
+    font-weight: 700;
+
+    letter-spacing: 0.01em;
+
+    text-decoration: none;
+}
+
+.sidebar-brand:hover {
+    color: var(--app-primary);
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+.sidebar-nav {
+    padding: 12px 10px 24px;
+}
+
+
+/* =========================================================
+   SECTION TITLES
+   ========================================================= */
+
+.sidebar-section-title {
+    margin-top: 14px;
+
+    padding: 13px 10px 7px;
+
+    border-top: 1px solid #ececef;
+
+    color: #9a8795;
+
+    font-size: 0.68rem;
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+}
+
+.sidebar-section-title:first-of-type {
+    border-top: 0;
+    margin-top: 6px;
+}
+
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+.sidebar-link {
+    position: relative;
+
+    min-height: 40px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 8px 10px;
+    margin-bottom: 2px;
+
+    border-radius: 7px;
+
+    color: #565b66;
+
+    font-size: 0.91rem;
+    font-weight: 400;
+
+    text-decoration: none;
+
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.sidebar-link i {
+    width: 19px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #7a808b;
+
+    font-size: 1rem;
+}
+
+.sidebar-link:hover {
+    background-color: #f4f0f3;
+
+    color: var(--app-primary);
+}
+
+.sidebar-link:hover i {
+    color: var(--app-primary);
+}
+
+
+/* =========================================================
+   ACTIVE
+   ========================================================= */
+
+.sidebar-link.active {
+    background-color: var(--app-primary-soft);
+
+    color: var(--app-primary);
+
+    font-weight: 600;
+}
+
+.sidebar-link.active i {
+    color: var(--app-primary);
+}
+
+.sidebar-link.active::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 7px;
+    bottom: 7px;
+
+    width: 3px;
+
+    border-radius: 0 3px 3px 0;
+
+    background-color: var(--app-primary);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: #d6d8dc;
+
+    border-radius: 10px;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 991.98px) {
+
+    .sidebar {
+        transform: translateX(-100%);
+
+        transition: transform 0.2s ease;
+
+        box-shadow:
+            5px 0 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+}

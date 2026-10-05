@@ -1,0 +1,106 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Clientes | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Clientes
+        </h1>
+
+        <p class="page-description">
+            Administra los clientes registrados en el sistema.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('ventas.cliente_nuevo') }}"
+        class="btn btn-primary"
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Nuevo cliente
+    </a>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-3 border-bottom">
+
+        <div class="row g-3">
+
+            <div class="col-md-8">
+
+                <div class="input-group">
+
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search"></i>
+                    </span>
+
+                    <input
+                        type="search"
+                        class="form-control"
+                        placeholder="Buscar por código, empresa o contacto..."
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Empresa</th>
+                    <th>Contacto</th>
+                    <th>Teléfono</th>
+                    <th>Correo</th>
+                    <th>Estado</th>
+
+                    <th class="text-end">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr>
+
+                    <td colspan="7">
+
+                        <div class="text-center py-5 text-muted">
+
+                            <i class="bi bi-people fs-2 d-block mb-2"></i>
+
+                            No hay clientes registrados.
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

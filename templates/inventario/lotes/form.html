@@ -1,0 +1,114 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo lote | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nuevo lote
+        </h1>
+
+        <p class="page-description">
+            Registra un lote asociado a un producto.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información del lote
+            </h5>
+
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código de lote
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. LOT-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="producto_id"
+                        class="form-label"
+                    >
+                        Producto
+                    </label>
+
+                    <select
+                        id="producto_id"
+                        name="producto_id"
+                        class="form-select"
+                        required
+                    >
+
+                        <option value="">
+                            Seleccione un producto
+                        </option>
+
+                    </select>
+
+                    <div class="form-text">
+                        El lote quedará asociado al producto seleccionado.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('inventario.lotes') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar lote
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

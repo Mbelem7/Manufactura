@@ -1,0 +1,288 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nueva BOM | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1 class="page-title">
+            Nueva lista de materiales
+        </h1>
+
+        <p class="page-description">
+            Define los materiales necesarios para fabricar un producto.
+        </p>
+
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información general
+            </h5>
+
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="codigo"
+                        name="codigo"
+                        placeholder="Ej. BOM-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="nombre"
+                        class="form-label"
+                    >
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="nombre"
+                        name="nombre"
+                        placeholder="Ej. Mesa ejecutiva estándar"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="producto_id"
+                        class="form-label"
+                    >
+                        Producto a fabricar
+                    </label>
+
+                    <select
+                        class="form-select"
+                        id="producto_id"
+                        name="producto_id"
+                        required
+                    >
+
+                        <option value="">
+                            Seleccione un producto
+                        </option>
+
+                    </select>
+
+                    <div class="form-text">
+                        Aquí se cargarán los productos disponibles desde el backend.
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="estado"
+                        class="form-label"
+                    >
+                        Estado
+                    </label>
+
+                    <select
+                        class="form-select"
+                        id="estado"
+                        name="estado"
+                        required
+                    >
+
+                        <option value="ACTIVA">
+                            Activa
+                        </option>
+
+                        <option value="INACTIVA">
+                            Inactiva
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="app-card mb-4">
+
+    <div class="p-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+
+            <div>
+                <h5 class="mb-1">
+                    Componentes
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Agregá los materiales requeridos para fabricar el producto.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-outline-primary"
+                id="addComponentButton"
+            >
+                <i class="bi bi-plus-lg me-1"></i>
+                Agregar componente
+            </button>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th style="width: 55%;">
+                            Producto / Material
+                        </th>
+
+                        <th style="width: 25%;">
+                            Cantidad
+                        </th>
+
+                        <th style="width: 10%;">
+                            Unidad
+                        </th>
+
+                        <th
+                            style="width: 10%;"
+                            class="text-end"
+                        >
+                            Acción
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody id="componentsTableBody">
+
+                    <tr class="component-row">
+
+                        <td>
+                            <select
+                                name="producto_component_id[]"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Seleccione un componente
+                                </option>
+                            </select>
+                        </td>
+
+                        <td>
+                            <input
+                                type="number"
+                                name="cantidad[]"
+                                class="form-control"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            >
+                        </td>
+
+                        <td>
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="-"
+                                disabled
+                            >
+                        </td>
+
+                        <td class="text-end">
+                            <button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm remove-component"
+                                title="Eliminar componente"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+    <a
+        href="{{ url_for('produccion.bom') }}"
+        class="btn btn-light"
+    >
+        Cancelar
+    </a>
+
+    <button
+        type="submit"
+        class="btn btn-primary"
+    >
+        <i class="bi bi-check-lg me-1"></i>
+        Guardar BOM
+    </button>
+
+</div>
+
+</form>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', filename='js/bom-form.js') }}">
+</script>
+
+{% endblock %}

@@ -1,0 +1,306 @@
+<aside class="sidebar">
+
+    <div class="sidebar-header">
+        <a
+            href="{{ url_for('dashboard.index') }}"
+            class="sidebar-brand"
+        >
+            Manufactura
+        </a>
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+        <!-- DASHBOARD -->
+
+        <a
+            href="{{ url_for('dashboard.index') }}"
+            class="sidebar-link
+            {% if request.endpoint == 'dashboard.index' %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-grid"></i>
+            <span>Dashboard</span>
+        </a>
+
+
+        <!-- INVENTARIO -->
+
+        <div class="sidebar-section-title">
+            Inventario
+        </div>
+
+
+        <a
+            href="{{ url_for('inventario.productos') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'inventario.productos',
+                'inventario.producto_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-box"></i>
+            <span>Productos</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('inventario.almacenes') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'inventario.almacenes',
+                'inventario.almacen_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-building"></i>
+            <span>Almacenes</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('inventario.lotes') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'inventario.lotes',
+                'inventario.lote_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-upc-scan"></i>
+            <span>Lotes</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('inventario.existencias') }}"
+            class="sidebar-link
+            {% if request.endpoint == 'inventario.existencias' %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-boxes"></i>
+            <span>Existencias</span>
+        </a>
+
+
+        <!-- PRODUCCIÓN -->
+
+        <div class="sidebar-section-title">
+            Producción
+        </div>
+
+
+        <a
+            href="{{ url_for('produccion.bom') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'produccion.bom',
+                'produccion.bom_nuevo',
+                'produccion.bom_detalle'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-diagram-3"></i>
+            <span>Lista de materiales</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('produccion.centros_trabajo') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'produccion.centros_trabajo',
+                'produccion.centro_trabajo_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-tools"></i>
+            <span>Centros de trabajo</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('produccion.rutas') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'produccion.rutas',
+                'produccion.ruta_nueva'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-signpost-split"></i>
+            <span>Rutas de operación</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('produccion.ordenes') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'produccion.ordenes',
+                'produccion.orden_nueva',
+                'produccion.orden_detalle'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-clipboard-check"></i>
+            <span>Órdenes de producción</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('produccion.ejecuciones') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'produccion.ejecuciones',
+                'produccion.ejecucion_nueva'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-play-circle"></i>
+            <span>Ejecuciones</span>
+        </a>
+
+
+        <!-- COMPRAS -->
+
+        <div class="sidebar-section-title">
+            Compras
+        </div>
+
+
+        <a
+            href="{{ url_for('compras.ordenes') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'compras.ordenes',
+                'compras.orden_nueva',
+                'compras.orden_detalle'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-cart"></i>
+            <span>Órdenes de compra</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('compras.recepciones') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'compras.recepciones',
+                'compras.recepcion_nueva'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-box-arrow-in-down"></i>
+            <span>Recepciones</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('compras.proveedores') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'compras.proveedores',
+                'compras.proveedor_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-truck"></i>
+            <span>Proveedores</span>
+        </a>
+
+
+        <!-- VENTAS -->
+
+        <div class="sidebar-section-title">
+            Ventas
+        </div>
+
+
+        <a
+            href="{{ url_for('ventas.ordenes') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'ventas.ordenes',
+                'ventas.orden_nueva',
+                'ventas.orden_detalle'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-receipt"></i>
+            <span>Órdenes de venta</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('ventas.despachos') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'ventas.despachos',
+                'ventas.despacho_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-box-arrow-up-right"></i>
+            <span>Despachos</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('ventas.clientes') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'ventas.clientes',
+                'ventas.cliente_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-people"></i>
+            <span>Clientes</span>
+        </a>
+
+
+        <!-- CONFIGURACIÓN -->
+
+        <div class="sidebar-section-title">
+            Configuración
+        </div>
+
+
+        <a
+            href="{{ url_for('configuracion.usuarios') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'configuracion.usuarios',
+                'configuracion.usuario_nuevo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-person-gear"></i>
+            <span>Usuarios</span>
+        </a>
+
+    </nav>
+
+</aside>

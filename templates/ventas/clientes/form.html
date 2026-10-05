@@ -1,0 +1,258 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo cliente | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nuevo cliente
+        </h1>
+
+        <p class="page-description">
+            Registra la empresa cliente y la información de contacto asociada.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información del cliente
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. CLI-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <label
+                        for="empresa"
+                        class="form-label"
+                    >
+                        Empresa
+                    </label>
+
+                    <input
+                        type="text"
+                        id="empresa"
+                        name="empresa"
+                        class="form-control"
+                        placeholder="Ej. Comercial San José"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Persona de contacto
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+
+                    <label
+                        for="nombre_1"
+                        class="form-label"
+                    >
+                        Primer nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre_1"
+                        name="nombre_1"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="nombre_2"
+                        class="form-label"
+                    >
+                        Segundo nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre_2"
+                        name="nombre_2"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="apellido_1"
+                        class="form-label"
+                    >
+                        Primer apellido
+                    </label>
+
+                    <input
+                        type="text"
+                        id="apellido_1"
+                        name="apellido_1"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="apellido_2"
+                        class="form-label"
+                    >
+                        Segundo apellido
+                    </label>
+
+                    <input
+                        type="text"
+                        id="apellido_2"
+                        name="apellido_2"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="telefono"
+                        class="form-label"
+                    >
+                        Teléfono
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="telefono"
+                        name="telefono"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-5">
+
+                    <label
+                        for="correo"
+                        class="form-label"
+                    >
+                        Correo
+                    </label>
+
+                    <input
+                        type="email"
+                        id="correo"
+                        name="correo"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="estado"
+                        class="form-label"
+                    >
+                        Estado
+                    </label>
+
+                    <input
+                        type="text"
+                        id="estado"
+                        name="estado"
+                        class="form-control"
+                        placeholder="Estado"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('ventas.clientes') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar cliente
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}

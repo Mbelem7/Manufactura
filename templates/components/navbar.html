@@ -1,0 +1,75 @@
+<nav class="navbar app-navbar">
+
+    <div class="container-fluid px-4">
+
+        <button
+            class="btn btn-icon d-lg-none"
+            id="sidebarToggle"
+            type="button"
+            aria-label="Mostrar menú"
+        >
+            <i class="bi bi-list fs-4"></i>
+        </button>
+
+        <div class="ms-auto d-flex align-items-center gap-3">
+
+            <button
+                class="btn btn-icon"
+                type="button"
+                aria-label="Notificaciones"
+            >
+                <i class="bi bi-bell"></i>
+            </button>
+
+            <div class="dropdown">
+
+                <button
+                    class="btn dropdown-toggle app-user-menu"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    <span class="app-user-avatar">
+                        <i class="bi bi-person"></i>
+                    </span>
+
+                    <span class="d-none d-md-inline">
+                        Usuario
+                    </span>
+                </button>
+
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+
+                    <li>
+                        <a
+                            class="dropdown-item"
+                            href="#"
+                        >
+                            <i class="bi bi-person me-2"></i>
+                            Perfil
+                        </a>
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <a
+                            class="dropdown-item"
+                            href="#"
+                        >
+                            <i class="bi bi-box-arrow-right me-2"></i>
+                            Cerrar sesión
+                        </a>
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</nav>

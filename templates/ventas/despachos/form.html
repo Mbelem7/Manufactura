@@ -1,0 +1,270 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo despacho | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nuevo despacho
+        </h1>
+
+        <p class="page-description">
+            Registra la salida de productos asociada a una orden de venta.
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información general
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. DES-001"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="ordenv_id"
+                        class="form-label"
+                    >
+                        Orden de venta
+                    </label>
+
+                    <select
+                        id="ordenv_id"
+                        name="ordenv_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione una orden de venta
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <label
+                        for="almacen_id"
+                        class="form-label"
+                    >
+                        Almacén origen
+                    </label>
+
+                    <select
+                        id="almacen_id"
+                        name="almacen_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione un almacén
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-2">
+
+                    <label
+                        for="estado"
+                        class="form-label"
+                    >
+                        Estado
+                    </label>
+
+                    <input
+                        type="text"
+                        id="estado"
+                        name="estado"
+                        class="form-control"
+                        placeholder="Estado"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+
+                <div>
+                    <h5 class="mb-1">
+                        Lotes a despachar
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Seleccioná los lotes y cantidades que saldrán del almacén.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    id="addDispatchItemButton"
+                >
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Agregar lote
+                </button>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th style="width: 55%;">
+                                Lote
+                            </th>
+
+                            <th style="width: 30%;">
+                                Cantidad
+                            </th>
+
+                            <th
+                                style="width: 15%;"
+                                class="text-end"
+                            >
+                                Acción
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="dispatchItemsTableBody">
+
+                        <tr class="dispatch-item-row">
+
+                            <td>
+
+                                <select
+                                    name="lote_id[]"
+                                    class="form-select"
+                                    required
+                                >
+                                    <option value="">
+                                        Seleccione un lote
+                                    </option>
+                                </select>
+
+                            </td>
+
+
+                            <td>
+
+                                <input
+                                    type="number"
+                                    name="cantidad[]"
+                                    class="form-control"
+                                    min="0.01"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    required
+                                >
+
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger btn-sm remove-dispatch-item"
+                                    title="Eliminar lote"
+                                >
+                                    <i class="bi bi-trash"></i>
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('ventas.despachos') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar despacho
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', filename='js/despacho-form.js') }}">
+</script>
+
+{% endblock %}
