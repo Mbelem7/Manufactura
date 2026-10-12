@@ -1,7 +1,10 @@
 {% extends "layouts/base.html" %}
 
+{# producto = None al crear; con datos al editar #}
+{% set p = producto or {} %}
+
 {% block title %}
-Nuevo producto | Manufactura
+{{ 'Editar' if producto else 'Nuevo' }} producto | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -9,7 +12,7 @@ Nuevo producto | Manufactura
 <div class="page-header">
     <div>
         <h1 class="page-title">
-            Nuevo producto
+            {{ 'Editar producto' if producto else 'Nuevo producto' }}
         </h1>
 
         <p class="page-description">
@@ -45,6 +48,7 @@ Nuevo producto | Manufactura
                         name="codigo"
                         class="form-control"
                         placeholder="Ej. PRD-001"
+                        value="{{ p.codigo or '' }}"
                         required
                     >
                 </div>
@@ -64,6 +68,7 @@ Nuevo producto | Manufactura
                         name="nombre"
                         class="form-control"
                         placeholder="Nombre del producto"
+                        value="{{ p.nombre or '' }}"
                         required
                     >
                 </div>
@@ -77,14 +82,23 @@ Nuevo producto | Manufactura
                         Tipo de producto
                     </label>
 
-                    <input
-                        type="text"
+                    <select
                         id="tipo_producto"
                         name="tipo_producto"
-                        class="form-control"
-                        placeholder="Tipo de producto"
+                        class="form-select"
                         required
                     >
+                        <option value="">Seleccione...</option>
+
+                        {% for t in tipos %}
+                        <option
+                            value="{{ t }}"
+                            {{ 'selected' if p.tipo_producto == t }}
+                        >
+                            {{ t|replace('_', ' ')|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
 
@@ -102,6 +116,7 @@ Nuevo producto | Manufactura
                         name="presentacion"
                         class="form-control"
                         placeholder="Ej. Caja, unidad, paquete"
+                        value="{{ p.presentacion or '' }}"
                     >
                 </div>
 
@@ -120,12 +135,13 @@ Nuevo producto | Manufactura
                         name="unidad_medida"
                         class="form-control"
                         placeholder="Ej. Unidad, kg, litro"
+                        value="{{ p.unidad_medida or '' }}"
                         required
                     >
                 </div>
 
 
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label
                         for="costo"
                         class="form-label"
@@ -147,6 +163,7 @@ Nuevo producto | Manufactura
                             min="0"
                             step="0.01"
                             placeholder="0.00"
+                            value="{{ '%.2f'|format(p.costo) if p.costo is defined and p.costo is not none else '' }}"
                             required
                         >
 
@@ -154,7 +171,7 @@ Nuevo producto | Manufactura
                 </div>
 
 
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label
                         for="precio"
                         class="form-label"
@@ -176,29 +193,11 @@ Nuevo producto | Manufactura
                             min="0"
                             step="0.01"
                             placeholder="0.00"
+                            value="{{ '%.2f'|format(p.precio) if p.precio is defined and p.precio is not none else '' }}"
                             required
                         >
 
                     </div>
-                </div>
-
-
-                <div class="col-md-4">
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <input
-                        type="text"
-                        id="estado"
-                        name="estado"
-                        class="form-control"
-                        placeholder="Estado"
-                        required
-                    >
                 </div>
 
 
@@ -216,7 +215,7 @@ Nuevo producto | Manufactura
                         class="form-control"
                         rows="4"
                         placeholder="Descripción del producto..."
-                    ></textarea>
+                    >{{ p.descripcion or '' }}</textarea>
                 </div>
 
             </div>
@@ -229,7 +228,8 @@ Nuevo producto | Manufactura
     <div class="d-flex justify-content-end gap-2 mb-4">
 
         <a
-           href="{{ url_for('inventario.productos') }}" class="btn btn-light">
+            href="{{ url_for('inventario.productos') }}"
+            class="btn btn-light"
         >
             Cancelar
         </a>
@@ -239,7 +239,7 @@ Nuevo producto | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar producto
+            {{ 'Guardar cambios' if producto else 'Guardar producto' }}
         </button>
 
     </div>

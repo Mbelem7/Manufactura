@@ -6,11 +6,13 @@ Detalle de orden de compra | Manufactura
 
 {% block content %}
 
+{% set colores = {'pendiente': 'warning', 'recibida': 'success', 'cancelada': 'secondary'} %}
+
 <div class="page-header">
 
     <div>
         <h1 class="page-title">
-            Orden de compra
+            Orden de compra #{{ orden.id_ordenc }}
         </h1>
 
         <p class="page-description">
@@ -33,7 +35,7 @@ Detalle de orden de compra | Manufactura
 
     <div class="col-lg-4">
 
-        <div class="app-card h-100">
+        <div class="app-card mb-4">
 
             <div class="p-4">
 
@@ -47,7 +49,7 @@ Detalle de orden de compra | Manufactura
                     </div>
 
                     <div class="fw-semibold">
-                        {{ orden.id_ordenc if orden else "-" }}
+                        {{ orden.id_ordenc }}
                     </div>
                 </div>
 
@@ -58,7 +60,7 @@ Detalle de orden de compra | Manufactura
                     </div>
 
                     <div class="fw-semibold">
-                        {{ orden.proveedor.empresa if orden and orden.proveedor else "-" }}
+                        {{ orden.proveedor_codigo }} — {{ orden.proveedor_empresa }}
                     </div>
                 </div>
 
@@ -69,24 +71,113 @@ Detalle de orden de compra | Manufactura
                     </div>
 
                     <div>
-                        {{ orden.estado if orden else "-" }}
+                        <span class="badge text-bg-{{ colores.get(orden.estado, 'secondary') }}">
+                            {{ orden.estado|capitalize }}
+                        </span>
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Fecha de creación
+                    </div>
+
+                    <div>
+                        {{ orden.fecha_creacion.strftime('%d/%m/%Y %H:%M') if orden.fecha_creacion }}
                     </div>
                 </div>
 
 
                 <div>
                     <div class="text-muted small mb-1">
-                        Fecha de creación
+                        Total
                     </div>
 
-                    <div>
-                        {{ orden.fecha_creacion if orden else "-" }}
+                    <div class="fw-semibold fs-5">
+                        {{ "C$ {:,.2f}".format(total or 0) }}
                     </div>
                 </div>
 
             </div>
 
         </div>
+
+
+        {% if editable %}
+
+        <div class="d-grid gap-2 mb-4">
+
+            <a
+                href="{{ url_for('compras.recepcion_nueva', orden_id=orden.id_ordenc) }}"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-box-arrow-in-down me-1"></i>
+                Registrar recepción
+            </a>
+
+            <a
+                href="{{ url_for('compras.orden_editar', orden_id=orden.id_ordenc) }}"
+                class="btn btn-light"
+            >
+                <i class="bi bi-pencil me-1"></i>
+                Editar proveedor
+            </a>
+
+            <form
+                method="POST"
+                action="{{ url_for('compras.orden_baja', orden_id=orden.id_ordenc) }}"
+                onsubmit="return confirm('¿Eliminar esta orden?');"
+                class="d-grid"
+            >
+                <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                >
+                    <i class="bi bi-trash me-1"></i>
+                    Eliminar orden
+                </button>
+            </form>
+
+        </div>
+
+        {% endif %}
+
+
+        {% if recepciones %}
+
+        <div class="app-card">
+
+            <div class="p-4">
+
+                <h5 class="mb-3">
+                    Recepciones
+                </h5>
+
+                {% for rec in recepciones %}
+
+                <div class="d-flex justify-content-between align-items-center {{ 'mb-2' if not loop.last }}">
+
+                    <a
+                        href="{{ url_for('compras.recepcion_detalle', recepcion_id=rec.id_recepcion) }}"
+                        class="text-decoration-none"
+                    >
+                        {{ rec.codigo }}
+                    </a>
+
+                    <span class="text-muted small">
+                        {{ rec.almacen_nombre }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
 
     </div>
 
@@ -117,39 +208,114 @@ Detalle de orden de compra | Manufactura
                             <th>Producto</th>
                             <th class="text-end">Cantidad</th>
                             <th class="text-end">Costo unitario</th>
+                            <th class="text-end">Subtotal</th>
+
+                            {% if editable %}
+                            <th class="text-end">Acciones</th>
+                            {% endif %}
                         </tr>
                     </thead>
 
 
                     <tbody>
 
-                        {% if orden and orden.detalles %}
+                        {% for d in detalles %}
 
-                            {% for detalle in orden.detalles %}
+                            <tr>
 
-                                <tr>
+                                <td>
+                                    {{ d.producto_codigo }} — {{ d.producto_nombre }}
+                                </td>
 
-                                    <td>
-                                        {{ detalle.producto.nombre }}
-                                    </td>
+                                {% if editable %}
 
-                                    <td class="text-end">
-                                        {{ detalle.cantidad }}
-                                    </td>
+                                <td style="width: 15%;">
+                                    <input
+                                        form="actualizar-{{ d.id_detalle_compra }}"
+                                        type="number"
+                                        name="cantidad"
+                                        class="form-control form-control-sm text-end"
+                                        min="0.01"
+                                        step="0.01"
+                                        value="{{ '%.2f'|format(d.cantidad) }}"
+                                        required
+                                    >
+                                </td>
 
-                                    <td class="text-end">
-                                        C$ {{ detalle.costo_unitario }}
-                                    </td>
+                                <td style="width: 18%;">
+                                    <input
+                                        form="actualizar-{{ d.id_detalle_compra }}"
+                                        type="number"
+                                        name="costo_unitario"
+                                        class="form-control form-control-sm text-end"
+                                        min="0"
+                                        step="0.01"
+                                        value="{{ '%.2f'|format(d.costo_unitario) }}"
+                                        required
+                                    >
+                                </td>
 
-                                </tr>
+                                {% else %}
 
-                            {% endfor %}
+                                <td class="text-end">
+                                    {{ "{:,.2f}".format(d.cantidad) }}
+                                </td>
+
+                                <td class="text-end">
+                                    {{ "C$ {:,.2f}".format(d.costo_unitario) }}
+                                </td>
+
+                                {% endif %}
+
+                                <td class="text-end">
+                                    {{ "C$ {:,.2f}".format(d.cantidad * d.costo_unitario) }}
+                                </td>
+
+                                {% if editable %}
+
+                                <td class="text-end text-nowrap">
+
+                                    <form
+                                        id="actualizar-{{ d.id_detalle_compra }}"
+                                        method="POST"
+                                        action="{{ url_for('compras.orden_detalle_actualizar', detalle_id=d.id_detalle_compra) }}"
+                                        class="d-inline"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-light"
+                                            title="Guardar cambios"
+                                        >
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('compras.orden_detalle_eliminar', detalle_id=d.id_detalle_compra) }}"
+                                        class="d-inline"
+                                        onsubmit="return confirm('¿Eliminar esta línea?');"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-light text-danger"
+                                            title="Eliminar"
+                                        >
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+
+                                </td>
+
+                                {% endif %}
+
+                            </tr>
 
                         {% else %}
 
                             <tr>
 
-                                <td colspan="3">
+                                <td colspan="{{ 5 if editable else 4 }}">
 
                                     <div class="text-center py-4 text-muted">
                                         No hay productos asociados a esta orden.
@@ -159,13 +325,132 @@ Detalle de orden de compra | Manufactura
 
                             </tr>
 
-                        {% endif %}
+                        {% endfor %}
 
                     </tbody>
 
                 </table>
 
             </div>
+
+
+            {% if editable %}
+
+            <div class="p-4 border-top">
+
+                <h6 class="mb-3">
+                    Agregar producto
+                </h6>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('compras.orden_detalle_agregar', orden_id=orden.id_ordenc) }}"
+                >
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-5">
+
+                            <label
+                                for="nuevo_producto"
+                                class="form-label"
+                            >
+                                Producto
+                            </label>
+
+                            <select
+                                id="nuevo_producto"
+                                name="producto_id"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Seleccione un producto
+                                </option>
+
+                                {% for prod in productos %}
+                                <option value="{{ prod.id_producto }}">
+                                    {{ prod.codigo }} — {{ prod.nombre }} ({{ prod.unidad_medida }})
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-2">
+
+                            <label
+                                for="nueva_cantidad"
+                                class="form-label"
+                            >
+                                Cantidad
+                            </label>
+
+                            <input
+                                type="number"
+                                id="nueva_cantidad"
+                                name="cantidad"
+                                class="form-control"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <label
+                                for="nuevo_costo"
+                                class="form-label"
+                            >
+                                Costo unitario
+                            </label>
+
+                            <div class="input-group">
+
+                                <span class="input-group-text">
+                                    C$
+                                </span>
+
+                                <input
+                                    type="number"
+                                    id="nuevo_costo"
+                                    name="costo_unitario"
+                                    class="form-control"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-2 d-grid">
+
+                            <button
+                                type="submit"
+                                class="btn btn-outline-primary"
+                            >
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Agregar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            {% endif %}
 
         </div>
 

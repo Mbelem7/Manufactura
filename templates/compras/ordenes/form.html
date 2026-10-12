@@ -1,7 +1,9 @@
 {% extends "layouts/base.html" %}
 
+{# orden = None al crear; con datos al editar (solo se cambia el proveedor) #}
+
 {% block title %}
-Nueva orden de compra | Manufactura
+{{ 'Editar' if orden else 'Nueva' }} orden de compra | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,11 +12,15 @@ Nueva orden de compra | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nueva orden de compra
+            {{ 'Editar orden de compra' if orden else 'Nueva orden de compra' }}
         </h1>
 
         <p class="page-description">
-            Registra una orden de compra asociada a un proveedor.
+            {% if orden %}
+                Cambia el proveedor de la orden. Los productos se modifican desde el detalle.
+            {% else %}
+                Registra una orden de compra asociada a un proveedor.
+            {% endif %}
         </p>
     </div>
 
@@ -33,7 +39,7 @@ Nueva orden de compra | Manufactura
 
             <div class="row g-3">
 
-                <div class="col-md-8">
+                <div class="col-md-12">
 
                     <label
                         for="proveedor_id"
@@ -51,28 +57,16 @@ Nueva orden de compra | Manufactura
                         <option value="">
                             Seleccione un proveedor
                         </option>
+
+                        {% for prov in proveedores %}
+                        <option
+                            value="{{ prov.id_proveedor }}"
+                            {{ 'selected' if orden and orden.proveedor_id == prov.id_proveedor }}
+                        >
+                            {{ prov.codigo }} — {{ prov.empresa }}
+                        </option>
+                        {% endfor %}
                     </select>
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <input
-                        type="text"
-                        id="estado"
-                        name="estado"
-                        class="form-control"
-                        placeholder="Estado"
-                        required
-                    >
 
                 </div>
 
@@ -82,6 +76,8 @@ Nueva orden de compra | Manufactura
 
     </div>
 
+
+    {% if not orden %}
 
     <div class="app-card mb-4">
 
@@ -145,13 +141,19 @@ Nueva orden de compra | Manufactura
                             <td>
 
                                 <select
-                                    name="producto_id[]"
+                                    name="producto_id"
                                     class="form-select"
                                     required
                                 >
                                     <option value="">
                                         Seleccione un producto
                                     </option>
+
+                                    {% for prod in productos %}
+                                    <option value="{{ prod.id_producto }}">
+                                        {{ prod.codigo }} — {{ prod.nombre }} ({{ prod.unidad_medida }})
+                                    </option>
+                                    {% endfor %}
                                 </select>
 
                             </td>
@@ -161,7 +163,7 @@ Nueva orden de compra | Manufactura
 
                                 <input
                                     type="number"
-                                    name="cantidad[]"
+                                    name="cantidad"
                                     class="form-control"
                                     min="0.01"
                                     step="0.01"
@@ -182,7 +184,7 @@ Nueva orden de compra | Manufactura
 
                                     <input
                                         type="number"
-                                        name="costo_unitario[]"
+                                        name="costo_unitario"
                                         class="form-control"
                                         min="0"
                                         step="0.01"
@@ -219,11 +221,13 @@ Nueva orden de compra | Manufactura
 
     </div>
 
+    {% endif %}
+
 
     <div class="d-flex justify-content-end gap-2 mb-4">
 
         <a
-            href="{{ url_for('compras.ordenes') }}"
+            href="{{ url_for('compras.orden_detalle', orden_id=orden.id_ordenc) if orden else url_for('compras.ordenes') }}"
             class="btn btn-light"
         >
             Cancelar
@@ -234,7 +238,7 @@ Nueva orden de compra | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar orden
+            {{ 'Guardar cambios' if orden else 'Guardar orden' }}
         </button>
 
     </div>
@@ -246,8 +250,10 @@ Nueva orden de compra | Manufactura
 
 {% block scripts %}
 
+{% if not orden %}
 <script
     src="{{ url_for('static', filename='js/orden-compra-form.js') }}">
 </script>
+{% endif %}
 
 {% endblock %}

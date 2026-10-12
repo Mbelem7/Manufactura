@@ -1,5 +1,7 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 
+    {% set clases = {'exito': 'success', 'error': 'danger'} %}
+
     {% if messages %}
 
         <div class="mb-4">
@@ -7,7 +9,7 @@
             {% for category, message in messages %}
 
                 <div
-                    class="alert alert-{{ category }} alert-dismissible fade show"
+                    class="alert alert-{{ clases.get(category, category) }} alert-dismissible fade show"
                     role="alert"
                 >
                     {{ message }}

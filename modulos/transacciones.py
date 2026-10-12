@@ -281,3 +281,538 @@ def finalizar_produccion(id_produccion, fecha_fin, cantidad_aceptada, cantidad_r
     except Exception:
         db.session.rollback()
         raise
+
+
+def crear_orden_compra(proveedor_id, detalles, estado, fecha):
+    # detalles: lista de dicts {'producto_id', 'cantidad', 'costo_unitario'}
+    # Crea la orden y todas sus lineas en una sola transaccion
+
+    try:
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO ORDEN_COMPRA
+                (
+                    estado,
+                    fecha_creacion,
+                    fecha_modificacion,
+                    proveedor_id
+                )
+                VALUES
+                (
+                    :estado,
+                    :fecha,
+                    :fecha,
+                    :proveedor_id
+                )
+                RETURNING id_ordenc
+            """),
+            {
+                'estado': estado,
+                'fecha': fecha,
+                'proveedor_id': proveedor_id
+            }
+        )
+
+        id_ordenc = resultado.scalar()
+
+        for d in detalles:
+            db.session.execute(
+                text("""
+                    INSERT INTO DETALLE_ORDEN_COMPRA
+                    (
+                        ordenc_id,
+                        producto_id,
+                        cantidad,
+                        costo_unitario
+                    )
+                    VALUES
+                    (
+                        :ordenc_id,
+                        :producto_id,
+                        :cantidad,
+                        :costo_unitario
+                    )
+                """),
+                {
+                    'ordenc_id': id_ordenc,
+                    'producto_id': d['producto_id'],
+                    'cantidad': d['cantidad'],
+                    'costo_unitario': d['costo_unitario']
+                }
+            )
+
+        db.session.commit()
+
+        return id_ordenc
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def crear_orden_venta(cliente_id, detalles, estado, fecha):
+    # detalles: lista de dicts {'producto_id', 'cantidad', 'precio_unitario'}
+    # Crea la orden y todas sus lineas en una sola transaccion
+
+    try:
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO ORDEN_VENTA
+                (
+                    estado,
+                    fecha_creacion,
+                    fecha_modificacion,
+                    cliente_id
+                )
+                VALUES
+                (
+                    :estado,
+                    :fecha,
+                    :fecha,
+                    :cliente_id
+                )
+                RETURNING id_ordenv
+            """),
+            {
+                'estado': estado,
+                'fecha': fecha,
+                'cliente_id': cliente_id
+            }
+        )
+
+        id_ordenv = resultado.scalar()
+
+        for d in detalles:
+            db.session.execute(
+                text("""
+                    INSERT INTO DETALLE_ORDEN_VENTA
+                    (
+                        ordenv_id,
+                        producto_id,
+                        cantidad,
+                        precio_unitario
+                    )
+                    VALUES
+                    (
+                        :ordenv_id,
+                        :producto_id,
+                        :cantidad,
+                        :precio_unitario
+                    )
+                """),
+                {
+                    'ordenv_id': id_ordenv,
+                    'producto_id': d['producto_id'],
+                    'cantidad': d['cantidad'],
+                    'precio_unitario': d['precio_unitario']
+                }
+            )
+
+        db.session.commit()
+
+        return id_ordenv
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def crear_proveedor(codigo, empresa, nombre_1, nombre_2, apellido_1, apellido_2,
+                    correo, telefono, estado, fecha):
+    # Un proveedor necesita su PERSONA: se crean las dos filas en una sola transaccion
+
+    try:
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO PERSONA
+                (
+                    nombre_1,
+                    nombre_2,
+                    apellido_1,
+                    apellido_2,
+                    correo,
+                    telefono,
+                    estado,
+                    fecha_creacion,
+                    fecha_modificacion
+                )
+                VALUES
+                (
+                    :nombre_1,
+                    :nombre_2,
+                    :apellido_1,
+                    :apellido_2,
+                    :correo,
+                    :telefono,
+                    :estado,
+                    :fecha,
+                    :fecha
+                )
+                RETURNING id_persona
+            """),
+            {
+                'nombre_1': nombre_1,
+                'nombre_2': nombre_2,
+                'apellido_1': apellido_1,
+                'apellido_2': apellido_2,
+                'correo': correo,
+                'telefono': telefono,
+                'estado': estado,
+                'fecha': fecha
+            }
+        )
+
+        id_persona = resultado.scalar()
+
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO PROVEEDOR
+                (
+                    codigo,
+                    empresa,
+                    persona_id
+                )
+                VALUES
+                (
+                    :codigo,
+                    :empresa,
+                    :persona_id
+                )
+                RETURNING id_proveedor
+            """),
+            {
+                'codigo': codigo,
+                'empresa': empresa,
+                'persona_id': id_persona
+            }
+        )
+
+        id_proveedor = resultado.scalar()
+
+        db.session.commit()
+
+        return id_proveedor
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def editar_proveedor(id_proveedor, codigo, empresa, nombre_1, nombre_2, apellido_1,
+                     apellido_2, correo, telefono, fecha):
+    # Actualiza el proveedor y los datos de su PERSONA en una sola transaccion
+
+    try:
+        db.session.execute(
+            text("""
+                UPDATE PERSONA
+                SET
+                    nombre_1 = :nombre_1,
+                    nombre_2 = :nombre_2,
+                    apellido_1 = :apellido_1,
+                    apellido_2 = :apellido_2,
+                    correo = :correo,
+                    telefono = :telefono,
+                    fecha_modificacion = :fecha
+                WHERE id_persona = (
+                    SELECT persona_id FROM PROVEEDOR WHERE id_proveedor = :id_proveedor
+                )
+            """),
+            {
+                'nombre_1': nombre_1,
+                'nombre_2': nombre_2,
+                'apellido_1': apellido_1,
+                'apellido_2': apellido_2,
+                'correo': correo,
+                'telefono': telefono,
+                'fecha': fecha,
+                'id_proveedor': id_proveedor
+            }
+        )
+
+        db.session.execute(
+            text("""
+                UPDATE PROVEEDOR
+                SET
+                    codigo = :codigo,
+                    empresa = :empresa
+                WHERE id_proveedor = :id_proveedor
+            """),
+            {
+                'codigo': codigo,
+                'empresa': empresa,
+                'id_proveedor': id_proveedor
+            }
+        )
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def crear_bom(codigo, nombre, producto_id, componentes, estado, fecha):
+    # componentes: lista de dicts {'producto_component_id', 'cantidad'}
+    # Crea el BOM y todos sus componentes en una sola transaccion
+
+    try:
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO BOM
+                (
+                    codigo,
+                    nombre,
+                    estado,
+                    fecha_creacion,
+                    fecha_modificacion,
+                    producto_id
+                )
+                VALUES
+                (
+                    :codigo,
+                    :nombre,
+                    :estado,
+                    :fecha,
+                    :fecha,
+                    :producto_id
+                )
+                RETURNING id_bom
+            """),
+            {
+                'codigo': codigo,
+                'nombre': nombre,
+                'estado': estado,
+                'fecha': fecha,
+                'producto_id': producto_id
+            }
+        )
+
+        id_bom = resultado.scalar()
+
+        for c in componentes:
+            db.session.execute(
+                text("""
+                    INSERT INTO DETALLE_BOM
+                    (
+                        bom_id,
+                        producto_component_id,
+                        cantidad
+                    )
+                    VALUES
+                    (
+                        :bom_id,
+                        :producto_component_id,
+                        :cantidad
+                    )
+                """),
+                {
+                    'bom_id': id_bom,
+                    'producto_component_id': c['producto_component_id'],
+                    'cantidad': c['cantidad']
+                }
+            )
+
+        db.session.commit()
+
+        return id_bom
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def iniciar_ejecucion(ordenp_id, usuario_id, fecha_inicio, estado_orden='en_proceso'):
+    # MES: registra el inicio (hora y operador) y pone la orden en proceso, todo junto
+
+    try:
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO PRODUCCION
+                (
+                    fecha_inicio,
+                    cantidad_aceptada,
+                    cantidad_rechazada,
+                    fecha_creacion,
+                    fecha_modificacion,
+                    ordenp_id,
+                    usuario_id
+                )
+                VALUES
+                (
+                    :fecha_inicio,
+                    0,
+                    0,
+                    :fecha_inicio,
+                    :fecha_inicio,
+                    :ordenp_id,
+                    :usuario_id
+                )
+                RETURNING id_produccion
+            """),
+            {
+                'fecha_inicio': fecha_inicio,
+                'ordenp_id': ordenp_id,
+                'usuario_id': usuario_id
+            }
+        )
+
+        id_produccion = resultado.scalar()
+
+        db.session.execute(
+            text("""
+                UPDATE ORDEN_PRODUCCION
+                SET
+                    estado = :estado,
+                    fecha_modificacion = :fecha_inicio
+                WHERE id_ordenp = :ordenp_id
+            """),
+            {
+                'estado': estado_orden,
+                'fecha_inicio': fecha_inicio,
+                'ordenp_id': ordenp_id
+            }
+        )
+
+        db.session.commit()
+
+        return id_produccion
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def crear_cliente(codigo, empresa, nombre_1, nombre_2, apellido_1, apellido_2,
+                    correo, telefono, estado, fecha):
+    # Un cliente necesita su PERSONA: se crean las dos filas en una sola transaccion
+
+    try:
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO PERSONA
+                (
+                    nombre_1,
+                    nombre_2,
+                    apellido_1,
+                    apellido_2,
+                    correo,
+                    telefono,
+                    estado,
+                    fecha_creacion,
+                    fecha_modificacion
+                )
+                VALUES
+                (
+                    :nombre_1,
+                    :nombre_2,
+                    :apellido_1,
+                    :apellido_2,
+                    :correo,
+                    :telefono,
+                    :estado,
+                    :fecha,
+                    :fecha
+                )
+                RETURNING id_persona
+            """),
+            {
+                'nombre_1': nombre_1,
+                'nombre_2': nombre_2,
+                'apellido_1': apellido_1,
+                'apellido_2': apellido_2,
+                'correo': correo,
+                'telefono': telefono,
+                'estado': estado,
+                'fecha': fecha
+            }
+        )
+
+        id_persona = resultado.scalar()
+
+        resultado = db.session.execute(
+            text("""
+                INSERT INTO CLIENTE
+                (
+                    codigo,
+                    empresa,
+                    persona_id
+                )
+                VALUES
+                (
+                    :codigo,
+                    :empresa,
+                    :persona_id
+                )
+                RETURNING id_cliente
+            """),
+            {
+                'codigo': codigo,
+                'empresa': empresa,
+                'persona_id': id_persona
+            }
+        )
+
+        id_cliente = resultado.scalar()
+
+        db.session.commit()
+
+        return id_cliente
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def editar_cliente(id_cliente, codigo, empresa, nombre_1, nombre_2, apellido_1,
+                     apellido_2, correo, telefono, fecha):
+    # Actualiza el cliente y los datos de su PERSONA en una sola transaccion
+
+    try:
+        db.session.execute(
+            text("""
+                UPDATE PERSONA
+                SET
+                    nombre_1 = :nombre_1,
+                    nombre_2 = :nombre_2,
+                    apellido_1 = :apellido_1,
+                    apellido_2 = :apellido_2,
+                    correo = :correo,
+                    telefono = :telefono,
+                    fecha_modificacion = :fecha
+                WHERE id_persona = (
+                    SELECT persona_id FROM CLIENTE WHERE id_cliente = :id_cliente
+                )
+            """),
+            {
+                'nombre_1': nombre_1,
+                'nombre_2': nombre_2,
+                'apellido_1': apellido_1,
+                'apellido_2': apellido_2,
+                'correo': correo,
+                'telefono': telefono,
+                'fecha': fecha,
+                'id_cliente': id_cliente
+            }
+        )
+
+        db.session.execute(
+            text("""
+                UPDATE CLIENTE
+                SET
+                    codigo = :codigo,
+                    empresa = :empresa
+                WHERE id_cliente = :id_cliente
+            """),
+            {
+                'codigo': codigo,
+                'empresa': empresa,
+                'id_cliente': id_cliente
+            }
+        )
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise

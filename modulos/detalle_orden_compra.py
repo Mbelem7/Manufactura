@@ -176,17 +176,17 @@ def actualizar_detalle_orden_compra(
     db.session.commit()
 
 
-def eliminar_detalle_orden_compra(id_detalle_compra):
+#def eliminar_detalle_orden_compra(id_detalle_compra):
     # Las lineas de detalle si se pueden borrar (no tienen estado)
 
-    db.session.execute(
-        text("""
-            DELETE FROM DETALLE_ORDEN_COMPRA
-            WHERE id_detalle_compra = :id_detalle_compra
-        """),
-        {
-            'id_detalle_compra': id_detalle_compra
-        }
-    )
+ #   db.session.execute(
+  #      text("""
+   #         DELETE FROM DETALLE_ORDEN_COMPRA
+    #        WHERE id_detalle_compra = :id_detalle_compra
+     #   """),
+      #  {
+       #     'id_detalle_compra': id_detalle_compra
+        #}
+    #)
 
-    db.session.commit()
+    #db.session.commit()

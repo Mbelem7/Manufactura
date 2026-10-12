@@ -19,8 +19,9 @@ Productos | Manufactura
     </div>
 
     <a
-        href="{{ url_for('inventario.producto_nuevo') }}" class="btn btn-primary">
-    
+        href="{{ url_for('inventario.producto_nuevo') }}"
+        class="btn btn-primary"
+    >
         <i class="bi bi-plus-lg me-1"></i>
         Nuevo producto
     </a>
@@ -44,11 +45,69 @@ Productos | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código o nombre..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <form method="GET" class="row g-3">
+
+                    <div class="col-6">
+
+                        <select
+                            name="tipo"
+                            class="form-select"
+                            onchange="this.form.submit()"
+                        >
+                            <option value="">Todos los tipos</option>
+
+                            {% for t in tipos %}
+                            <option
+                                value="{{ t }}"
+                                {{ 'selected' if tipo == t }}
+                            >
+                                {{ t|replace('_', ' ')|capitalize }}
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <select
+                            name="estado"
+                            class="form-select"
+                            onchange="this.form.submit()"
+                        >
+                            <option value="">Todos los estados</option>
+
+                            <option
+                                value="activo"
+                                {{ 'selected' if estado == 'activo' }}
+                            >
+                                Activos
+                            </option>
+
+                            <option
+                                value="inactivo"
+                                {{ 'selected' if estado == 'inactivo' }}
+                            >
+                                Inactivos
+                            </option>
+                        </select>
+
+                    </div>
+
+                </form>
 
             </div>
 
@@ -81,13 +140,72 @@ Productos | Manufactura
 
             <tbody>
 
-                {#
-                Posteriormente:
+                {% for prod in productos %}
 
-                {% for producto in productos %}
-                    ...
-                {% endfor %}
-                #}
+                <tr data-fila>
+
+                    <td>{{ prod.codigo }}</td>
+
+                    <td>{{ prod.nombre }}</td>
+
+                    <td>{{ prod.tipo_producto|replace('_', ' ')|capitalize }}</td>
+
+                    <td>{{ prod.presentacion or '—' }}</td>
+
+                    <td>{{ prod.unidad_medida }}</td>
+
+                    <td class="text-end">
+                        {{ "C$ {:,.2f}".format(prod.costo or 0) }}
+                    </td>
+
+                    <td class="text-end">
+                        {{ "C$ {:,.2f}".format(prod.precio or 0) }}
+                    </td>
+
+                    <td>
+                        {% if prod.estado == 'activo' %}
+                            <span class="badge text-bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ prod.estado|capitalize }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('inventario.producto_editar', producto_id=prod.id_producto) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        {% if prod.estado == 'activo' %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('inventario.producto_baja', producto_id=prod.id_producto) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar este producto?');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
 
                 <tr>
 
@@ -105,6 +223,8 @@ Productos | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -113,4 +233,20 @@ Productos | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

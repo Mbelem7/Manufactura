@@ -7,7 +7,8 @@ def insertar_recepcion(
     fecha_creacion,
     fecha_modificacion,
     ordenc_id,
-    almacen_id
+    almacen_id,
+    estado
 ):
 
     resultado = db.session.execute(
@@ -18,7 +19,8 @@ def insertar_recepcion(
                 fecha_creacion,
                 fecha_modificacion,
                 ordenc_id,
-                almacen_id
+                almacen_id,
+                estado
             )
             VALUES
             (
@@ -26,7 +28,8 @@ def insertar_recepcion(
                 :fecha_creacion,
                 :fecha_modificacion,
                 :ordenc_id,
-                :almacen_id
+                :almacen_id,
+                :estado
             )
             RETURNING id_recepcion
         """),
@@ -35,7 +38,8 @@ def insertar_recepcion(
             'fecha_creacion': fecha_creacion,
             'fecha_modificacion': fecha_modificacion,
             'ordenc_id': ordenc_id,
-            'almacen_id': almacen_id
+            'almacen_id': almacen_id,
+            'estado': estado
         }
     )
 
@@ -57,6 +61,7 @@ def obtener_recepciones():
                 t.fecha_modificacion,
                 t.ordenc_id,
                 t.almacen_id,
+                t.estado,
                 al.codigo AS almacen_codigo,
                 al.nombre AS almacen_nombre
             FROM RECEPCION t
@@ -80,6 +85,7 @@ def obtener_un_recepcion(id_recepcion):
                 t.fecha_modificacion,
                 t.ordenc_id,
                 t.almacen_id,
+                t.estado,
                 al.codigo AS almacen_codigo,
                 al.nombre AS almacen_nombre
             FROM RECEPCION t
@@ -107,6 +113,7 @@ def obtener_recepciones_por_ordenc(ordenc_id):
                 t.fecha_modificacion,
                 t.ordenc_id,
                 t.almacen_id,
+                t.estado,
                 al.codigo AS almacen_codigo,
                 al.nombre AS almacen_nombre
             FROM RECEPCION t
@@ -134,6 +141,7 @@ def obtener_recepciones_por_almacen(almacen_id):
                 t.fecha_modificacion,
                 t.ordenc_id,
                 t.almacen_id,
+                t.estado,
                 al.codigo AS almacen_codigo,
                 al.nombre AS almacen_nombre
             FROM RECEPCION t
@@ -161,6 +169,7 @@ def obtener_recepcion_por_codigo(codigo):
                 t.fecha_modificacion,
                 t.ordenc_id,
                 t.almacen_id,
+                t.estado,
                 al.codigo AS almacen_codigo,
                 al.nombre AS almacen_nombre
             FROM RECEPCION t
@@ -177,13 +186,41 @@ def obtener_recepcion_por_codigo(codigo):
     return recepcion
 
 
+def obtener_recepciones_por_estado(estado):
+
+    resultado = db.session.execute(
+        text("""
+            SELECT
+                t.id_recepcion,
+                t.codigo,
+                t.fecha_creacion,
+                t.fecha_modificacion,
+                t.ordenc_id,
+                t.almacen_id,
+                t.estado,
+                al.codigo AS almacen_codigo,
+                al.nombre AS almacen_nombre
+            FROM RECEPCION t
+            INNER JOIN ALMACEN al ON al.id_almacen = t.almacen_id
+            WHERE t.estado = :estado
+        """),
+        {
+            'estado': estado
+        }
+    )
+
+    recepciones = resultado.fetchall()
+
+    return recepciones
+
 
 def actualizar_recepcion(
     id_recepcion,
     codigo,
     fecha_modificacion,
     ordenc_id,
-    almacen_id
+    almacen_id,
+    estado
 ):
 
     db.session.execute(
@@ -193,7 +230,8 @@ def actualizar_recepcion(
                 codigo = :codigo,
                 fecha_modificacion = :fecha_modificacion,
                 ordenc_id = :ordenc_id,
-                almacen_id = :almacen_id
+                almacen_id = :almacen_id,
+                estado = :estado
             WHERE id_recepcion = :id_recepcion
         """),
         {
@@ -201,9 +239,30 @@ def actualizar_recepcion(
             'codigo': codigo,
             'fecha_modificacion': fecha_modificacion,
             'ordenc_id': ordenc_id,
-            'almacen_id': almacen_id
+            'almacen_id': almacen_id,
+            'estado': estado
         }
     )
 
     db.session.commit()
 
+
+def actualizar_estado_recepcion(id_recepcion, estado, fecha_modificacion):
+    # Baja logica: no se borra, solo cambia el estado
+
+    db.session.execute(
+        text("""
+            UPDATE RECEPCION
+            SET
+                estado = :estado,
+                fecha_modificacion = :fecha_modificacion
+            WHERE id_recepcion = :id_recepcion
+        """),
+        {
+            'id_recepcion': id_recepcion,
+            'estado': estado,
+            'fecha_modificacion': fecha_modificacion
+        }
+    )
+
+    db.session.commit()

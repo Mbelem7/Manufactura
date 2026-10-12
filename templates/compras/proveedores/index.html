@@ -45,11 +45,43 @@ Proveedores | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código, empresa o contacto..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <form method="GET">
+
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Todos los estados</option>
+
+                        <option
+                            value="activo"
+                            {{ 'selected' if estado == 'activo' }}
+                        >
+                            Activos
+                        </option>
+
+                        <option
+                            value="inactivo"
+                            {{ 'selected' if estado == 'inactivo' }}
+                        >
+                            Inactivos
+                        </option>
+                    </select>
+
+                </form>
 
             </div>
 
@@ -79,6 +111,68 @@ Proveedores | Manufactura
 
             <tbody>
 
+                {% for prov in proveedores %}
+
+                <tr data-fila>
+
+                    <td>{{ prov.codigo }}</td>
+
+                    <td>{{ prov.empresa }}</td>
+
+                    <td>
+                        {{ prov.persona_nombre_1 }}
+                        {{ prov.persona_apellido_1 }}
+                    </td>
+
+                    <td>{{ prov.persona_telefono or '—' }}</td>
+
+                    <td>{{ prov.persona_correo }}</td>
+
+                    <td>
+                        {% if prov.persona_estado == 'activo' %}
+                            <span class="badge text-bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ prov.persona_estado|capitalize }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('compras.proveedor_editar', proveedor_id=prov.id_proveedor) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        {% if prov.persona_estado == 'activo' %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('compras.proveedor_baja', proveedor_id=prov.id_proveedor) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar este proveedor?');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
                     <td colspan="7">
@@ -95,6 +189,8 @@ Proveedores | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -103,4 +199,20 @@ Proveedores | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

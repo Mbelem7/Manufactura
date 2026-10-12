@@ -9,7 +9,8 @@ def insertar_ruta_operacion(
     fecha_creacion,
     fecha_modificacion,
     centro_id,
-    ordenp_id
+    ordenp_id,
+    estado
 ):
 
     resultado = db.session.execute(
@@ -22,7 +23,8 @@ def insertar_ruta_operacion(
                 fecha_creacion,
                 fecha_modificacion,
                 centro_id,
-                ordenp_id
+                ordenp_id,
+                estado
             )
             VALUES
             (
@@ -32,7 +34,8 @@ def insertar_ruta_operacion(
                 :fecha_creacion,
                 :fecha_modificacion,
                 :centro_id,
-                :ordenp_id
+                :ordenp_id,
+                :estado
             )
             RETURNING id_ruta
         """),
@@ -43,7 +46,8 @@ def insertar_ruta_operacion(
             'fecha_creacion': fecha_creacion,
             'fecha_modificacion': fecha_modificacion,
             'centro_id': centro_id,
-            'ordenp_id': ordenp_id
+            'ordenp_id': ordenp_id,
+            'estado': estado
         }
     )
 
@@ -67,6 +71,7 @@ def obtener_rutas_operacion():
                 t.fecha_modificacion,
                 t.centro_id,
                 t.ordenp_id,
+                t.estado,
                 ct.codigo AS centro_trabajo_codigo,
                 ct.nombre AS centro_trabajo_nombre
             FROM RUTA_OPERACION t
@@ -92,6 +97,7 @@ def obtener_un_ruta_operacion(id_ruta):
                 t.fecha_modificacion,
                 t.centro_id,
                 t.ordenp_id,
+                t.estado,
                 ct.codigo AS centro_trabajo_codigo,
                 ct.nombre AS centro_trabajo_nombre
             FROM RUTA_OPERACION t
@@ -121,6 +127,7 @@ def obtener_rutas_operacion_por_centro(centro_id):
                 t.fecha_modificacion,
                 t.centro_id,
                 t.ordenp_id,
+                t.estado,
                 ct.codigo AS centro_trabajo_codigo,
                 ct.nombre AS centro_trabajo_nombre
             FROM RUTA_OPERACION t
@@ -150,6 +157,7 @@ def obtener_rutas_operacion_por_ordenp(ordenp_id):
                 t.fecha_modificacion,
                 t.centro_id,
                 t.ordenp_id,
+                t.estado,
                 ct.codigo AS centro_trabajo_codigo,
                 ct.nombre AS centro_trabajo_nombre
             FROM RUTA_OPERACION t
@@ -179,6 +187,7 @@ def obtener_ruta_operacion_por_codigo(codigo):
                 t.fecha_modificacion,
                 t.centro_id,
                 t.ordenp_id,
+                t.estado,
                 ct.codigo AS centro_trabajo_codigo,
                 ct.nombre AS centro_trabajo_nombre
             FROM RUTA_OPERACION t
@@ -195,6 +204,36 @@ def obtener_ruta_operacion_por_codigo(codigo):
     return ruta_operacion
 
 
+def obtener_rutas_operacion_por_estado(estado):
+
+    resultado = db.session.execute(
+        text("""
+            SELECT
+                t.id_ruta,
+                t.codigo,
+                t.tiempo_estandar,
+                t.secuencia,
+                t.fecha_creacion,
+                t.fecha_modificacion,
+                t.centro_id,
+                t.ordenp_id,
+                t.estado,
+                ct.codigo AS centro_trabajo_codigo,
+                ct.nombre AS centro_trabajo_nombre
+            FROM RUTA_OPERACION t
+            INNER JOIN CENTRO_TRABAJO ct ON ct.id_centro = t.centro_id
+            WHERE t.estado = :estado
+        """),
+        {
+            'estado': estado
+        }
+    )
+
+    rutas_operacion = resultado.fetchall()
+
+    return rutas_operacion
+
+
 def actualizar_ruta_operacion(
     id_ruta,
     codigo,
@@ -202,7 +241,8 @@ def actualizar_ruta_operacion(
     secuencia,
     fecha_modificacion,
     centro_id,
-    ordenp_id
+    ordenp_id,
+    estado
 ):
 
     db.session.execute(
@@ -214,7 +254,8 @@ def actualizar_ruta_operacion(
                 secuencia = :secuencia,
                 fecha_modificacion = :fecha_modificacion,
                 centro_id = :centro_id,
-                ordenp_id = :ordenp_id
+                ordenp_id = :ordenp_id,
+                estado = :estado
             WHERE id_ruta = :id_ruta
         """),
         {
@@ -224,7 +265,29 @@ def actualizar_ruta_operacion(
             'secuencia': secuencia,
             'fecha_modificacion': fecha_modificacion,
             'centro_id': centro_id,
-            'ordenp_id': ordenp_id
+            'ordenp_id': ordenp_id,
+            'estado': estado
+        }
+    )
+
+    db.session.commit()
+
+
+def actualizar_estado_ruta_operacion(id_ruta, estado, fecha_modificacion):
+    # Baja logica: no se borra, solo cambia el estado
+
+    db.session.execute(
+        text("""
+            UPDATE RUTA_OPERACION
+            SET
+                estado = :estado,
+                fecha_modificacion = :fecha_modificacion
+            WHERE id_ruta = :id_ruta
+        """),
+        {
+            'id_ruta': id_ruta,
+            'estado': estado,
+            'fecha_modificacion': fecha_modificacion
         }
     )
 

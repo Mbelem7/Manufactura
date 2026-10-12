@@ -176,17 +176,17 @@ def actualizar_detalle_orden_venta(
     db.session.commit()
 
 
-def eliminar_detalle_orden_venta(id_detalle_venta):
+#def eliminar_detalle_orden_venta(id_detalle_venta):
     # Las lineas de detalle si se pueden borrar (no tienen estado)
 
-    db.session.execute(
-        text("""
-            DELETE FROM DETALLE_ORDEN_VENTA
-            WHERE id_detalle_venta = :id_detalle_venta
-        """),
-        {
-            'id_detalle_venta': id_detalle_venta
-        }
-    )
+ #   db.session.execute(
+  #      text("""
+   #         DELETE FROM DETALLE_ORDEN_VENTA
+    #        WHERE id_detalle_venta = :id_detalle_venta
+     #   """),
+      #  {
+       #     'id_detalle_venta': id_detalle_venta
+        #}
+    #)
 
-    db.session.commit()
+    #db.session.commit()

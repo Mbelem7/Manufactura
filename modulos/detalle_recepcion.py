@@ -213,17 +213,17 @@ def actualizar_detalle_recepcion(
     db.session.commit()
 
 
-def eliminar_detalle_recepcion(id_detalle_recepcion):
+#def eliminar_detalle_recepcion(id_detalle_recepcion):
     # Las lineas de detalle si se pueden borrar (no tienen estado)
 
-    db.session.execute(
-        text("""
-            DELETE FROM DETALLE_RECEPCION
-            WHERE id_detalle_recepcion = :id_detalle_recepcion
-        """),
-        {
-            'id_detalle_recepcion': id_detalle_recepcion
-        }
-    )
+ #   db.session.execute(
+  #      text("""
+   #         DELETE FROM DETALLE_RECEPCION
+    #        WHERE id_detalle_recepcion = :id_detalle_recepcion
+     #   """),
+      #  {
+       #     'id_detalle_recepcion': id_detalle_recepcion
+        #}
+    #)
 
-    db.session.commit()
+    #db.session.commit()
