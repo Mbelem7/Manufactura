@@ -6,6 +6,9 @@ Existencias | Manufactura
 
 {% block content %}
 
+{# Vista "por almacen" (por defecto) o "por lote" (?detalle=lotes) #}
+{% set por_lotes = request.args.get('detalle') == 'lotes' %}
+
 <div class="page-header">
 
     <div>
@@ -18,12 +21,29 @@ Existencias | Manufactura
         </p>
     </div>
 
+    <a
+        href="{{ url_for('inventario.reporte') }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-file-earmark-text me-1"></i>
+        Reporte
+    </a>
+
 </div>
 
 
-<div class="app-card">
+<div class="app-card mb-4">
 
     <div class="p-3 border-bottom">
+
+        <form
+            id="filtros"
+            method="GET"
+        >
+            {% if por_lotes %}
+            <input type="hidden" name="detalle" value="lotes">
+            {% endif %}
+        </form>
 
         <div class="row g-3">
 
@@ -37,6 +57,7 @@ Existencias | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por producto o lote..."
                     >
@@ -48,12 +69,24 @@ Existencias | Manufactura
 
             <div class="col-md-3">
 
-                <select class="form-select">
-
+                <select
+                    form="filtros"
+                    name="almacen_id"
+                    class="form-select"
+                    onchange="this.form.submit()"
+                >
                     <option value="">
                         Todos los almacenes
                     </option>
 
+                    {% for alm in almacenes %}
+                    <option
+                        value="{{ alm.id_almacen }}"
+                        {{ 'selected' if almacen_id == alm.id_almacen }}
+                    >
+                        {{ alm.codigo }} — {{ alm.nombre }}
+                    </option>
+                    {% endfor %}
                 </select>
 
             </div>
@@ -61,17 +94,51 @@ Existencias | Manufactura
 
             <div class="col-md-4">
 
-                <select class="form-select">
-
+                <select
+                    form="filtros"
+                    name="producto_id"
+                    class="form-select"
+                    onchange="this.form.submit()"
+                >
                     <option value="">
                         Todos los productos
                     </option>
 
+                    {% for p in productos %}
+                    <option
+                        value="{{ p.id_producto }}"
+                        {{ 'selected' if producto_id == p.id_producto }}
+                    >
+                        {{ p.codigo }} — {{ p.nombre }}
+                    </option>
+                    {% endfor %}
                 </select>
 
             </div>
 
         </div>
+
+        <ul class="nav nav-pills mt-3">
+
+            <li class="nav-item">
+                <a
+                    class="nav-link {{ 'active' if not por_lotes }}"
+                    href="{{ url_for('inventario.existencias', almacen_id=almacen_id, producto_id=producto_id) }}"
+                >
+                    Por almacén
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a
+                    class="nav-link {{ 'active' if por_lotes }}"
+                    href="{{ url_for('inventario.existencias', almacen_id=almacen_id, producto_id=producto_id, detalle='lotes') }}"
+                >
+                    Por lote
+                </a>
+            </li>
+
+        </ul>
 
     </div>
 
@@ -79,6 +146,8 @@ Existencias | Manufactura
     <div class="table-responsive">
 
         <table class="table align-middle mb-0">
+
+            {% if por_lotes %}
 
             <thead>
                 <tr>
@@ -92,6 +161,25 @@ Existencias | Manufactura
             </thead>
 
             <tbody>
+
+                {% for f in por_lote %}
+
+                <tr data-fila>
+
+                    <td>{{ f.producto_codigo }} — {{ f.producto_nombre }}</td>
+
+                    <td>{{ f.almacen_codigo }} — {{ f.almacen_nombre }}</td>
+
+                    <td>{{ f.lote_codigo or 'Sin lote' }}</td>
+
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(f.cantidad) }}
+                        {{ f.producto_unidad_medida }}
+                    </td>
+
+                </tr>
+
+                {% else %}
 
                 <tr>
 
@@ -109,6 +197,132 @@ Existencias | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
+            </tbody>
+
+            {% else %}
+
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Almacén</th>
+                    <th class="text-end">
+                        Cantidad
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in existencias %}
+
+                <tr data-fila>
+
+                    <td>{{ f.producto_codigo }} — {{ f.producto_nombre }}</td>
+
+                    <td>{{ f.almacen_codigo }} — {{ f.almacen_nombre }}</td>
+
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(f.existencia) }}
+                        {{ f.unidad_medida }}
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="3">
+
+                        <div class="text-center py-5 text-muted">
+
+                            <i class="bi bi-boxes fs-2 d-block mb-2"></i>
+
+                            No hay existencias registradas.
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+            {% endif %}
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+
+        <h5 class="mb-1">
+            Stock actual
+        </h5>
+
+        <p class="text-muted mb-0">
+            Existencia total de cada producto en todos los almacenes.
+        </p>
+
+    </div>
+
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th class="text-end">
+                        Stock actual
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for s in stock %}
+
+                <tr data-fila>
+
+                    <td>{{ s.codigo }} — {{ s.nombre }}</td>
+
+                    <td>{{ s.tipo_producto|replace('_', ' ')|capitalize }}</td>
+
+                    <td class="text-end {{ 'text-muted' if s.stock_actual == 0 }}">
+                        {{ "{:,.2f}".format(s.stock_actual) }}
+                        {{ s.unidad_medida }}
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="3">
+
+                        <div class="text-center py-4 text-muted">
+                            No hay productos registrados.
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -117,4 +331,20 @@ Existencias | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de las tablas mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

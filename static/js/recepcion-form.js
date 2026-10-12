@@ -6,65 +6,31 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    const createRow = () => {
-        const row = document.createElement("tr");
+    const firstRow = tableBody.querySelector(".reception-item-row");
 
-        row.classList.add("reception-item-row");
+    if (!firstRow) {
+        return;
+    }
 
-        row.innerHTML = `
-            <td>
-                <select
-                    name="producto_id[]"
-                    class="form-select"
-                    required
-                >
-                    <option value="">
-                        Seleccione un producto
-                    </option>
-                </select>
-            </td>
+    // La primera fila (que ya trae las opciones de producto desde el servidor
+    // y los nombres de campo del formulario) se guarda limpia como modelo.
+    const rowTemplate = firstRow.cloneNode(true);
 
-            <td>
-                <select
-                    name="lote_id[]"
-                    class="form-select"
-                    required
-                >
-                    <option value="">
-                        Seleccione un lote
-                    </option>
-                </select>
-            </td>
+    rowTemplate.querySelectorAll("input").forEach((input) => {
+        input.value = "";
+    });
 
-            <td>
-                <input
-                    type="number"
-                    name="cantidad[]"
-                    class="form-control"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                >
-            </td>
-
-            <td class="text-end">
-                <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm remove-reception-item"
-                    title="Eliminar producto"
-                >
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
-
-        return row;
-    };
+    rowTemplate.querySelectorAll("select").forEach((select) => {
+        select.selectedIndex = 0;
+    });
 
 
     addButton.addEventListener("click", () => {
-        tableBody.appendChild(createRow());
+        const row = rowTemplate.cloneNode(true);
+
+        tableBody.appendChild(row);
+
+        row.querySelector("select").focus();
     });
 
 
@@ -77,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const rows = tableBody.querySelectorAll(".reception-item-row");
 
+        // Siempre debe quedar al menos una fila
         if (rows.length <= 1) {
             return;
         }

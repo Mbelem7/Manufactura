@@ -6,6 +6,9 @@ Lotes | Manufactura
 
 {% block content %}
 
+{# Con ?con_existencia=1 las filas traen otras columnas (existencia en vez de fecha) #}
+{% set con_ex = request.args.get('con_existencia') %}
+
 <div class="page-header">
 
     <div>
@@ -33,9 +36,14 @@ Lotes | Manufactura
 
     <div class="p-3 border-bottom">
 
+        <form
+            id="filtros"
+            method="GET"
+        ></form>
+
         <div class="row g-3">
 
-            <div class="col-md-8">
+            <div class="col-md-5">
 
                 <div class="input-group">
 
@@ -45,11 +53,56 @@ Lotes | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código de lote o producto..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <select
+                    form="filtros"
+                    name="producto_id"
+                    class="form-select"
+                    onchange="this.form.submit()"
+                >
+                    <option value="">Todos los productos</option>
+
+                    {% for p in productos %}
+                    <option
+                        value="{{ p.id_producto }}"
+                        {{ 'selected' if producto_id == p.id_producto }}
+                    >
+                        {{ p.codigo }} — {{ p.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+
+            <div class="col-md-3">
+
+                <select
+                    form="filtros"
+                    name="con_existencia"
+                    class="form-select"
+                    onchange="this.form.submit()"
+                >
+                    <option value="">Todos los lotes</option>
+
+                    <option
+                        value="1"
+                        {{ 'selected' if con_ex }}
+                    >
+                        Solo con existencia
+                    </option>
+                </select>
 
             </div>
 
@@ -66,7 +119,12 @@ Lotes | Manufactura
                 <tr>
                     <th>Código de lote</th>
                     <th>Producto</th>
+
+                    {% if con_ex %}
+                    <th class="text-end">Existencia</th>
+                    {% else %}
                     <th>Fecha de creación</th>
+                    {% endif %}
 
                     <th class="text-end">
                         Acciones
@@ -75,6 +133,47 @@ Lotes | Manufactura
             </thead>
 
             <tbody>
+
+                {% for l in lotes if not producto_id or (l.id_producto if con_ex else l.producto_id) == producto_id %}
+
+                <tr data-fila>
+
+                    <td class="fw-semibold">{{ l.codigo }}</td>
+
+                    <td>
+                        {% if con_ex %}
+                            {{ l.producto_nombre }}
+                        {% else %}
+                            {{ l.producto_codigo }} — {{ l.producto_nombre }}
+                        {% endif %}
+                    </td>
+
+                    {% if con_ex %}
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(l.existencia) }}
+                        {{ l.unidad_medida }}
+                    </td>
+                    {% else %}
+                    <td>
+                        {{ l.fecha_creacion.strftime('%d/%m/%Y %H:%M') if l.fecha_creacion }}
+                    </td>
+                    {% endif %}
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('inventario.lote_editar', lote_id=l.id_lote) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% else %}
 
                 <tr>
 
@@ -92,6 +191,8 @@ Lotes | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -100,4 +201,20 @@ Lotes | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

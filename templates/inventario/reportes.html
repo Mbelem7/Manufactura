@@ -1,0 +1,207 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Reporte de inventario | Manufactura
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        aside, nav, .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Reporte de inventario
+        </h1>
+
+        <p class="page-description">
+            Generado el {{ generado.strftime('%d/%m/%Y %H:%M') }}
+        </p>
+    </div>
+
+    <div class="d-flex gap-2 no-print">
+
+        <a
+            href="{{ url_for('inventario.existencias') }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-arrow-left me-1"></i>
+            Volver
+        </a>
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            onclick="window.print()"
+        >
+            <i class="bi bi-printer me-1"></i>
+            Imprimir
+        </button>
+
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-0">
+            Existencias por producto y almacén
+        </h5>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Almacén</th>
+                    <th class="text-end">Cantidad</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in existencias %}
+
+                <tr>
+                    <td>{{ f.producto_codigo }} — {{ f.producto_nombre }}</td>
+                    <td>{{ f.almacen_codigo }} — {{ f.almacen_nombre }}</td>
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(f.existencia) }} {{ f.unidad_medida }}
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">
+                        No hay existencias registradas.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-0">
+            Stock actual
+        </h5>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Stock actual</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for s in stock %}
+
+                <tr>
+                    <td>{{ s.codigo }} — {{ s.nombre }}</td>
+                    <td>{{ s.tipo_producto|replace('_', ' ')|capitalize }}</td>
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(s.stock_actual) }} {{ s.unidad_medida }}
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">
+                        No hay productos registrados.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-0">
+            Lotes con existencia
+        </h5>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Lote</th>
+                    <th>Producto</th>
+                    <th class="text-end">Existencia</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for l in lotes if l.existencia > 0 %}
+
+                <tr>
+                    <td>{{ l.codigo }}</td>
+                    <td>{{ l.producto_nombre }}</td>
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(l.existencia) }} {{ l.unidad_medida }}
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">
+                        No hay lotes con existencia.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

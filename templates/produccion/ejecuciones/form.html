@@ -14,7 +14,7 @@ Nueva ejecución de producción | Manufactura
         </h1>
 
         <p class="page-description">
-            Registra el resultado real de una orden de producción.
+            Inicia la fabricación de una orden de producción.
         </p>
     </div>
 
@@ -33,7 +33,7 @@ Nueva ejecución de producción | Manufactura
 
             <div class="row g-3">
 
-                <div class="col-md-6">
+                <div class="col-md-12">
 
                     <label
                         for="ordenp_id"
@@ -51,119 +51,39 @@ Nueva ejecución de producción | Manufactura
                         <option value="">
                             Seleccione una orden de producción
                         </option>
-                    </select>
 
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="usuario_id"
-                        class="form-label"
-                    >
-                        Usuario responsable
-                    </label>
-
-                    <select
-                        id="usuario_id"
-                        name="usuario_id"
-                        class="form-select"
-                        required
-                    >
-                        <option value="">
-                            Seleccione un usuario
+                        {% for o in ordenes %}
+                        <option
+                            value="{{ o.id_ordenp }}"
+                            {{ 'selected' if orden_id == o.id_ordenp }}
+                        >
+                            #{{ o.id_ordenp }} — {{ o.producto_codigo }} {{ o.producto_nombre }}
+                            ({{ "{:,.2f}".format(o.cantidad) }} {{ o.producto_unidad_medida }})
+                            · {{ o.estado|replace('_', ' ') }}
                         </option>
+                        {% endfor %}
                     </select>
 
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="fecha_inicio"
-                        class="form-label"
-                    >
-                        Fecha de inicio
-                    </label>
-
-                    <input
-                        type="datetime-local"
-                        id="fecha_inicio"
-                        name="fecha_inicio"
-                        class="form-control"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="fecha_fin"
-                        class="form-label"
-                    >
-                        Fecha de finalización
-                    </label>
-
-                    <input
-                        type="datetime-local"
-                        id="fecha_fin"
-                        name="fecha_fin"
-                        class="form-control"
-                    >
-
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="cantidad_aceptada"
-                        class="form-label"
-                    >
-                        Cantidad aceptada
-                    </label>
-
-                    <input
-                        type="number"
-                        id="cantidad_aceptada"
-                        name="cantidad_aceptada"
-                        class="form-control"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        required
-                    >
-
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="cantidad_rechazada"
-                        class="form-label"
-                    >
-                        Cantidad rechazada
-                    </label>
-
-                    <input
-                        type="number"
-                        id="cantidad_rechazada"
-                        name="cantidad_rechazada"
-                        class="form-control"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        required
-                    >
+                    <div class="form-text">
+                        Solo aparecen las órdenes pendientes o en proceso.
+                    </div>
 
                 </div>
 
             </div>
+
+            <div class="alert alert-info mt-4 mb-0">
+                La fecha y hora de inicio y el operador se registran automáticamente
+                (el usuario con la sesión iniciada). Las cantidades aceptada y rechazada
+                se registran después, con el botón <strong>Terminar</strong> de la lista
+                de ejecuciones.
+            </div>
+
+            {% if not ordenes %}
+            <div class="alert alert-warning mt-3 mb-0">
+                No hay órdenes de producción pendientes ni en proceso.
+            </div>
+            {% endif %}
 
         </div>
 
@@ -183,8 +103,8 @@ Nueva ejecución de producción | Manufactura
             type="submit"
             class="btn btn-primary"
         >
-            <i class="bi bi-check-lg me-1"></i>
-            Guardar ejecución
+            <i class="bi bi-play-circle me-1"></i>
+            Iniciar ejecución
         </button>
 
     </div>

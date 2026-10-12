@@ -45,11 +45,43 @@ Recepciones | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código u orden de compra..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <form method="GET">
+
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Todos los estados</option>
+
+                        <option
+                            value="activo"
+                            {{ 'selected' if request.args.get('estado') == 'activo' }}
+                        >
+                            Activas
+                        </option>
+
+                        <option
+                            value="inactivo"
+                            {{ 'selected' if request.args.get('estado') == 'inactivo' }}
+                        >
+                            Inactivas
+                        </option>
+                    </select>
+
+                </form>
 
             </div>
 
@@ -68,6 +100,7 @@ Recepciones | Manufactura
                     <th>Orden de compra</th>
                     <th>Almacén destino</th>
                     <th>Fecha de creación</th>
+                    <th>Estado</th>
 
                     <th class="text-end">
                         Acciones
@@ -77,9 +110,92 @@ Recepciones | Manufactura
 
             <tbody>
 
+                {% for rec in recepciones %}
+
+                <tr data-fila>
+
+                    <td>
+                        <a
+                            href="{{ url_for('compras.recepcion_detalle', recepcion_id=rec.id_recepcion) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            {{ rec.codigo }}
+                        </a>
+                    </td>
+
+                    <td>
+                        <a
+                            href="{{ url_for('compras.orden_detalle', orden_id=rec.ordenc_id) }}"
+                            class="text-decoration-none"
+                        >
+                            #{{ rec.ordenc_id }}
+                        </a>
+                    </td>
+
+                    <td>
+                        {{ rec.almacen_codigo }} — {{ rec.almacen_nombre }}
+                    </td>
+
+                    <td>
+                        {{ rec.fecha_creacion.strftime('%d/%m/%Y %H:%M') if rec.fecha_creacion }}
+                    </td>
+
+                    <td>
+                        {% if rec.estado == 'activo' %}
+                            <span class="badge text-bg-success">Activa</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ rec.estado|capitalize }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('compras.recepcion_detalle', recepcion_id=rec.id_recepcion) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver detalle"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        {% if rec.estado == 'activo' %}
+
+                        <a
+                            href="{{ url_for('compras.recepcion_editar', recepcion_id=rec.id_recepcion) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('compras.recepcion_baja', recepcion_id=rec.id_recepcion) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar esta recepción? Las existencias que ya ingresaron al inventario no se descuentan.');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
-                    <td colspan="5">
+                    <td colspan="6">
 
                         <div class="text-center py-5 text-muted">
 
@@ -93,6 +209,8 @@ Recepciones | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -101,4 +219,20 @@ Recepciones | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

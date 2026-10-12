@@ -1,7 +1,9 @@
 {% extends "layouts/base.html" %}
 
+{# lote = None al crear; con datos al editar (solo se cambia el codigo) #}
+
 {% block title %}
-Nuevo lote | Manufactura
+{{ 'Editar' if lote else 'Nuevo' }} lote | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,11 +12,16 @@ Nuevo lote | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nuevo lote
+            {{ 'Editar lote' if lote else 'Nuevo lote' }}
         </h1>
 
         <p class="page-description">
-            Registra un lote asociado a un producto.
+            {% if lote %}
+                Cambia el código del lote. El producto no se puede modificar
+                porque el lote ya puede tener existencias.
+            {% else %}
+                Registra un lote asociado a un producto.
+            {% endif %}
         </p>
     </div>
 
@@ -49,6 +56,7 @@ Nuevo lote | Manufactura
                         name="codigo"
                         class="form-control"
                         placeholder="Ej. LOT-001"
+                        value="{{ lote.codigo if lote else '' }}"
                         required
                     >
 
@@ -64,6 +72,18 @@ Nuevo lote | Manufactura
                         Producto
                     </label>
 
+                    {% if lote %}
+
+                    <input
+                        type="text"
+                        id="producto_id"
+                        class="form-control"
+                        value="{{ lote.producto_codigo }} — {{ lote.producto_nombre }}"
+                        disabled
+                    >
+
+                    {% else %}
+
                     <select
                         id="producto_id"
                         name="producto_id"
@@ -75,11 +95,19 @@ Nuevo lote | Manufactura
                             Seleccione un producto
                         </option>
 
+                        {% for p in productos %}
+                        <option value="{{ p.id_producto }}">
+                            {{ p.codigo }} — {{ p.nombre }}
+                        </option>
+                        {% endfor %}
+
                     </select>
 
                     <div class="form-text">
                         El lote quedará asociado al producto seleccionado.
                     </div>
+
+                    {% endif %}
 
                 </div>
 
@@ -104,7 +132,7 @@ Nuevo lote | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar lote
+            {{ 'Guardar cambios' if lote else 'Guardar lote' }}
         </button>
 
     </div>

@@ -6,6 +6,8 @@
 
 {% block content %}
 
+{% set colores = {'pendiente': 'warning', 'despachada': 'success', 'cancelada': 'secondary'} %}
+
 <div class="page-header">
 
     <div>
@@ -45,11 +47,41 @@
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por cliente..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <form method="GET">
+
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Todos los estados</option>
+
+                        <option value="pendiente" {{ 'selected' if estado == 'pendiente' }}>
+                            Pendientes
+                        </option>
+
+                        <option value="despachada" {{ 'selected' if estado == 'despachada' }}>
+                            Despachadas
+                        </option>
+
+                        <option value="cancelada" {{ 'selected' if estado == 'cancelada' }}>
+                            Canceladas
+                        </option>
+                    </select>
+
+                </form>
 
             </div>
 
@@ -77,6 +109,76 @@
 
             <tbody>
 
+                {% for o in ordenes %}
+
+                <tr data-fila>
+
+                    <td>
+                        <a
+                            href="{{ url_for('ventas.orden_detalle', orden_id=o.id_ordenv) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            #{{ o.id_ordenv }}
+                        </a>
+                    </td>
+
+                    <td>
+                        {{ o.cliente_codigo }} — {{ o.cliente_empresa }}
+                    </td>
+
+                    <td>
+                        <span class="badge text-bg-{{ colores.get(o.estado, 'secondary') }}">
+                            {{ o.estado|capitalize }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ o.fecha_creacion.strftime('%d/%m/%Y %H:%M') if o.fecha_creacion }}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('ventas.orden_detalle', orden_id=o.id_ordenv) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver detalle"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        {% if o.estado == 'pendiente' %}
+
+                        <a
+                            href="{{ url_for('ventas.orden_editar', orden_id=o.id_ordenv) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('ventas.orden_baja', orden_id=o.id_ordenv) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar esta orden?');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
                     <td colspan="5">
@@ -93,6 +195,8 @@
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -101,4 +205,20 @@
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

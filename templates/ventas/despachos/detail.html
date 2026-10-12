@@ -1,0 +1,221 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Detalle de despacho | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Despacho {{ despacho.codigo }}
+        </h1>
+
+        <p class="page-description">
+            Consulta la información general y los lotes despachados.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('ventas.despachos') }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver
+    </a>
+
+</div>
+
+
+<div class="row g-4">
+
+    <div class="col-lg-4">
+
+        <div class="app-card mb-4">
+
+            <div class="p-4">
+
+                <h5 class="mb-4">
+                    Información general
+                </h5>
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Código
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ despacho.codigo }}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Orden de venta
+                    </div>
+
+                    <div>
+                        <a
+                            href="{{ url_for('ventas.orden_detalle', orden_id=despacho.ordenv_id) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            #{{ despacho.ordenv_id }}
+                        </a>
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Almacén origen
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ despacho.almacen_codigo }} — {{ despacho.almacen_nombre }}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Estado
+                    </div>
+
+                    <div>
+                        {% if despacho.estado == 'despachado' %}
+                            <span class="badge text-bg-success">Despachado</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ despacho.estado|capitalize }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <div>
+                    <div class="text-muted small mb-1">
+                        Fecha de creación
+                    </div>
+
+                    <div>
+                        {{ despacho.fecha_creacion.strftime('%d/%m/%Y %H:%M') if despacho.fecha_creacion }}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {% if despacho.estado == 'despachado' %}
+
+        <div class="d-grid gap-2 mb-4">
+
+            <a
+                href="{{ url_for('ventas.despacho_editar', despacho_id=despacho.id_despacho) }}"
+                class="btn btn-light"
+            >
+                <i class="bi bi-pencil me-1"></i>
+                Editar código
+            </a>
+
+            <form
+                method="POST"
+                action="{{ url_for('ventas.despacho_baja', despacho_id=despacho.id_despacho) }}"
+                onsubmit="return confirm('¿Eliminar este despacho? Las existencias que ya salieron del inventario no se devuelven.');"
+                class="d-grid"
+            >
+                <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                >
+                    <i class="bi bi-trash me-1"></i>
+                    Eliminar despacho
+                </button>
+            </form>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="col-lg-8">
+
+        <div class="app-card">
+
+            <div class="p-4 border-bottom">
+
+                <h5 class="mb-1">
+                    Lotes despachados
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Lotes y cantidades que salieron del almacén.
+                </p>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Lote</th>
+                            <th class="text-end">Cantidad</th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for d in detalles %}
+
+                            <tr>
+
+                                <td>
+                                    {{ d.lote_codigo or '—' }}
+                                </td>
+
+                                <td class="text-end">
+                                    {{ "{:,.2f}".format(d.cantidad) }}
+                                </td>
+
+                            </tr>
+
+                        {% else %}
+
+                            <tr>
+
+                                <td colspan="2">
+
+                                    <div class="text-center py-4 text-muted">
+                                        No hay lotes registrados en este despacho.
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

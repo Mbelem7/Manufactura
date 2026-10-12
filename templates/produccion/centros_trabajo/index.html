@@ -45,11 +45,43 @@ Centros de trabajo | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código, nombre o máquina..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <form method="GET">
+
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Todos los estados</option>
+
+                        <option
+                            value="activo"
+                            {{ 'selected' if estado == 'activo' }}
+                        >
+                            Activos
+                        </option>
+
+                        <option
+                            value="inactivo"
+                            {{ 'selected' if estado == 'inactivo' }}
+                        >
+                            Inactivos
+                        </option>
+                    </select>
+
+                </form>
 
             </div>
 
@@ -77,6 +109,61 @@ Centros de trabajo | Manufactura
 
             <tbody>
 
+                {% for c in centros %}
+
+                <tr data-fila>
+
+                    <td>{{ c.codigo }}</td>
+
+                    <td>{{ c.nombre }}</td>
+
+                    <td>{{ c.maquina or '—' }}</td>
+
+                    <td>
+                        {% if c.estado == 'activo' %}
+                            <span class="badge text-bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ c.estado|capitalize }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('produccion.centro_trabajo_editar', centro_id=c.id_centro) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        {% if c.estado == 'activo' %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('produccion.centro_trabajo_baja', centro_id=c.id_centro) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar este centro de trabajo?');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
                     <td colspan="5">
@@ -93,6 +180,8 @@ Centros de trabajo | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -101,4 +190,20 @@ Centros de trabajo | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

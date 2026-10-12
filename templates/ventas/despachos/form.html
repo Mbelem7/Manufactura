@@ -1,7 +1,43 @@
 {% extends "layouts/base.html" %}
 
+{# despacho = None al crear; con datos al editar (solo se cambia el codigo) #}
+
+{# ---- Preparacion de las filas sugeridas (solo al crear) ----
+   pedido:    producto -> cantidad total que pide la orden
+   filas:     lotes sugeridos para cubrir lo pedido (se toman en el orden en que vienen)
+   faltantes: productos para los que no alcanza la existencia del almacen #}
+{% set pedido = {} %}
+{% set nombres = {} %}
+{% set filas = [] %}
+{% set faltantes = [] %}
+
+{% for d in detalles_orden %}
+    {% set _ = pedido.update({d.producto_id: pedido.get(d.producto_id, 0) + d.cantidad}) %}
+    {% set _ = nombres.update({d.producto_id: d.producto_codigo ~ ' — ' ~ d.producto_nombre}) %}
+{% endfor %}
+
+{% if almacen_id %}
+    {% for producto_id, cantidad in pedido.items() %}
+        {% set pend = namespace(v=cantidad) %}
+
+        {% for l in lotes_disponibles if l.producto_id == producto_id %}
+            {% if pend.v > 0 %}
+                {% set tomar = [pend.v, l.cantidad]|min %}
+                {% set _ = filas.append({'lote_id': l.lote_id, 'cantidad': tomar}) %}
+                {% set pend.v = pend.v - tomar %}
+            {% endif %}
+        {% endfor %}
+
+        {% if pend.v > 0 %}
+            {% set _ = faltantes.append({'producto_id': producto_id, 'falta': pend.v}) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% set puede = (not despacho) and orden and orden.estado == 'pendiente' and almacen_id %}
+
 {% block title %}
-Nuevo despacho | Manufactura
+{{ 'Editar' if despacho else 'Nuevo' }} despacho | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,11 +46,16 @@ Nuevo despacho | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nuevo despacho
+            {{ 'Editar despacho' if despacho else 'Nuevo despacho' }}
         </h1>
 
         <p class="page-description">
-            Registra la salida de productos asociada a una orden de venta.
+            {% if despacho %}
+                Cambia el código del despacho. La orden y el almacén no se pueden modificar
+                porque la mercancía ya salió del inventario.
+            {% else %}
+                Registra la salida de productos asociada a una orden de venta.
+            {% endif %}
         </p>
     </div>
 
@@ -33,7 +74,9 @@ Nuevo despacho | Manufactura
 
             <div class="row g-3">
 
-                <div class="col-md-3">
+                {% if despacho %}
+
+                <div class="col-md-4">
 
                     <label
                         for="codigo"
@@ -48,11 +91,45 @@ Nuevo despacho | Manufactura
                         name="codigo"
                         class="form-control"
                         placeholder="Ej. DES-001"
+                        value="{{ despacho.codigo }}"
                         required
                     >
 
                 </div>
 
+
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Orden de venta
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        value="#{{ despacho.ordenv_id }}"
+                        disabled
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Almacén origen
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        value="{{ despacho.almacen_codigo }} — {{ despacho.almacen_nombre }}"
+                        disabled
+                    >
+
+                </div>
+
+                {% else %}
 
                 <div class="col-md-4">
 
@@ -72,12 +149,21 @@ Nuevo despacho | Manufactura
                         <option value="">
                             Seleccione una orden de venta
                         </option>
+
+                        {% for o in ordenes_pendientes %}
+                        <option
+                            value="{{ o.id_ordenv }}"
+                            {{ 'selected' if orden and orden.id_ordenv == o.id_ordenv }}
+                        >
+                            #{{ o.id_ordenv }} — {{ o.cliente_empresa }}
+                        </option>
+                        {% endfor %}
                     </select>
 
                 </div>
 
 
-                <div class="col-md-3">
+                <div class="col-md-4">
 
                     <label
                         for="almacen_id"
@@ -95,30 +181,41 @@ Nuevo despacho | Manufactura
                         <option value="">
                             Seleccione un almacén
                         </option>
+
+                        {% for alm in almacenes %}
+                        <option
+                            value="{{ alm.id_almacen }}"
+                            {{ 'selected' if almacen_id == alm.id_almacen }}
+                        >
+                            {{ alm.codigo }} — {{ alm.nombre }}
+                        </option>
+                        {% endfor %}
                     </select>
 
                 </div>
 
 
-                <div class="col-md-2">
+                <div class="col-md-4">
 
                     <label
-                        for="estado"
+                        for="codigo"
                         class="form-label"
                     >
-                        Estado
+                        Código
                     </label>
 
                     <input
                         type="text"
-                        id="estado"
-                        name="estado"
+                        id="codigo"
+                        name="codigo"
                         class="form-control"
-                        placeholder="Estado"
+                        placeholder="Ej. DES-001"
                         required
                     >
 
                 </div>
+
+                {% endif %}
 
             </div>
 
@@ -126,6 +223,59 @@ Nuevo despacho | Manufactura
 
     </div>
 
+
+    {% if not despacho %}
+
+        {% if not orden %}
+
+        <div class="alert alert-info mb-4">
+            Seleccione una orden de venta y un almacén para cargar los lotes disponibles.
+        </div>
+
+        {% elif orden.estado != 'pendiente' %}
+
+        <div class="alert alert-warning mb-4">
+            Esa orden de venta ya no está pendiente, así que no admite un despacho.
+        </div>
+
+        {% elif not almacen_id %}
+
+        <div class="alert alert-info mb-4">
+            Seleccione el almacén de donde saldrá la mercancía para ver los lotes disponibles.
+        </div>
+
+        {% endif %}
+
+
+        {% if puede and not filas %}
+
+        <div class="alert alert-warning mb-4">
+            No hay lotes con existencia de los productos de esta orden en el almacén elegido.
+        </div>
+
+        {% endif %}
+
+
+        {% if puede and faltantes %}
+
+        <div class="alert alert-warning mb-4">
+            <div class="fw-semibold mb-1">
+                No alcanza la existencia de este almacén para despachar la orden completa:
+            </div>
+
+            {% for f in faltantes %}
+            <div>
+                {{ nombres[f.producto_id] }}: faltan {{ "{:,.2f}".format(f.falta) }}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% endif %}
+
+    {% endif %}
+
+
+    {% if puede and filas %}
 
     <div class="app-card mb-4">
 
@@ -140,6 +290,7 @@ Nuevo despacho | Manufactura
 
                     <p class="text-muted mb-0">
                         Seleccioná los lotes y cantidades que saldrán del almacén.
+                        Se sugiere cubrir lo pedido con los lotes disponibles.
                     </p>
                 </div>
 
@@ -180,18 +331,31 @@ Nuevo despacho | Manufactura
 
                     <tbody id="dispatchItemsTableBody">
 
+                        {% for fila in filas %}
+
                         <tr class="dispatch-item-row">
 
                             <td>
 
                                 <select
-                                    name="lote_id[]"
+                                    name="lote_id"
                                     class="form-select"
                                     required
                                 >
                                     <option value="">
                                         Seleccione un lote
                                     </option>
+
+                                    {% for l in lotes_disponibles if l.producto_id in pedido %}
+                                    <option
+                                        value="{{ l.lote_id }}"
+                                        data-disponible="{{ '%.2f'|format(l.cantidad) }}"
+                                        {{ 'selected' if l.lote_id == fila.lote_id }}
+                                    >
+                                        {{ l.lote_codigo }} — {{ l.producto_nombre }}
+                                        (disponible: {{ "{:,.2f}".format(l.cantidad) }} {{ l.producto_unidad_medida }})
+                                    </option>
+                                    {% endfor %}
                                 </select>
 
                             </td>
@@ -201,11 +365,12 @@ Nuevo despacho | Manufactura
 
                                 <input
                                     type="number"
-                                    name="cantidad[]"
+                                    name="cantidad"
                                     class="form-control"
                                     min="0.01"
                                     step="0.01"
                                     placeholder="0.00"
+                                    value="{{ '%.2f'|format(fila.cantidad) }}"
                                     required
                                 >
 
@@ -226,6 +391,8 @@ Nuevo despacho | Manufactura
 
                         </tr>
 
+                        {% endfor %}
+
                     </tbody>
 
                 </table>
@@ -236,23 +403,27 @@ Nuevo despacho | Manufactura
 
     </div>
 
+    {% endif %}
+
 
     <div class="d-flex justify-content-end gap-2 mb-4">
 
         <a
-            href="{{ url_for('ventas.despachos') }}"
+            href="{{ url_for('ventas.despacho_detalle', despacho_id=despacho.id_despacho) if despacho else url_for('ventas.despachos') }}"
             class="btn btn-light"
         >
             Cancelar
         </a>
 
+        {% if despacho or (puede and filas and not faltantes) %}
         <button
             type="submit"
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar despacho
+            {{ 'Guardar cambios' if despacho else 'Guardar despacho' }}
         </button>
+        {% endif %}
 
     </div>
 
@@ -263,8 +434,39 @@ Nuevo despacho | Manufactura
 
 {% block scripts %}
 
+{% if not despacho %}
+<script>
+    // Al cambiar la orden o el almacen se recarga la pagina para cargar los lotes disponibles
+    (function () {
+        const orden = document.getElementById("ordenv_id");
+        const almacen = document.getElementById("almacen_id");
+
+        function recargar() {
+            const params = new URLSearchParams();
+
+            if (orden.value) {
+                params.set("orden_id", orden.value);
+            }
+
+            if (almacen.value) {
+                params.set("almacen_id", almacen.value);
+            }
+
+            const consulta = params.toString();
+
+            window.location.href = window.location.pathname + (consulta ? "?" + consulta : "");
+        }
+
+        orden.addEventListener("change", recargar);
+        almacen.addEventListener("change", recargar);
+    })();
+</script>
+{% endif %}
+
+{% if puede and filas %}
 <script
     src="{{ url_for('static', filename='js/despacho-form.js') }}">
 </script>
+{% endif %}
 
 {% endblock %}

@@ -45,6 +45,7 @@ Lista de materiales | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código o nombre..."
                     >
@@ -55,21 +56,35 @@ Lista de materiales | Manufactura
 
             <div class="col-md-3">
 
-                <select class="form-select">
+                <form method="GET">
 
-                    <option value="">
-                        Todos los estados
-                    </option>
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
 
-                    <option value="ACTIVA">
-                        Activa
-                    </option>
+                        <option value="">
+                            Todos los estados
+                        </option>
 
-                    <option value="INACTIVA">
-                        Inactiva
-                    </option>
+                        <option
+                            value="activo"
+                            {{ 'selected' if estado == 'activo' }}
+                        >
+                            Activa
+                        </option>
 
-                </select>
+                        <option
+                            value="inactivo"
+                            {{ 'selected' if estado == 'inactivo' }}
+                        >
+                            Inactiva
+                        </option>
+
+                    </select>
+
+                </form>
 
             </div>
 
@@ -102,7 +117,77 @@ Lista de materiales | Manufactura
 
             <tbody>
 
-                {# Datos dinámicos posteriormente #}
+                {% for b in boms %}
+
+                <tr data-fila>
+
+                    <td>
+                        <a
+                            href="{{ url_for('produccion.bom_detalle', bom_id=b.id_bom) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            {{ b.codigo }}
+                        </a>
+                    </td>
+
+                    <td>{{ b.nombre }}</td>
+
+                    <td>{{ b.producto_codigo }} — {{ b.producto_nombre }}</td>
+
+                    <td>
+                        {% if b.estado == 'activo' %}
+                            <span class="badge text-bg-success">Activa</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inactiva</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ b.fecha_creacion.strftime('%d/%m/%Y') if b.fecha_creacion }}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('produccion.bom_detalle', bom_id=b.id_bom) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver detalle"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        {% if b.estado == 'activo' %}
+
+                        <a
+                            href="{{ url_for('produccion.bom_editar', bom_id=b.id_bom) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('produccion.bom_baja', bom_id=b.id_bom) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar esta lista de materiales?');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
 
                 <tr>
 
@@ -120,6 +205,8 @@ Lista de materiales | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -128,4 +215,20 @@ Lista de materiales | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

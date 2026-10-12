@@ -1,7 +1,9 @@
 {% extends "layouts/base.html" %}
 
+{# ruta = None al crear; con datos al editar (la orden no se cambia) #}
+
 {% block title %}
-Nueva ruta de operación | Manufactura
+{{ 'Editar' if ruta else 'Nueva' }} ruta de operación | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,11 +12,15 @@ Nueva ruta de operación | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nueva ruta de operación
+            {{ 'Editar ruta de operación' if ruta else 'Nueva ruta de operación' }}
         </h1>
 
         <p class="page-description">
-            Registra una operación asociada a una orden de producción.
+            {% if ruta %}
+                Cambia los datos de la operación. La orden de producción no se puede modificar.
+            {% else %}
+                Registra una operación asociada a una orden de producción.
+            {% endif %}
         </p>
     </div>
 
@@ -48,6 +54,7 @@ Nueva ruta de operación | Manufactura
                         name="codigo"
                         class="form-control"
                         placeholder="Ej. RUT-001"
+                        value="{{ ruta.codigo if ruta else '' }}"
                         required
                     >
 
@@ -63,6 +70,18 @@ Nueva ruta de operación | Manufactura
                         Orden de producción
                     </label>
 
+                    {% if ruta %}
+
+                    <input
+                        type="text"
+                        id="ordenp_id"
+                        class="form-control"
+                        value="#{{ ruta.ordenp_id }}"
+                        disabled
+                    >
+
+                    {% else %}
+
                     <select
                         id="ordenp_id"
                         name="ordenp_id"
@@ -72,7 +91,22 @@ Nueva ruta de operación | Manufactura
                         <option value="">
                             Seleccione una orden de producción
                         </option>
+
+                        {% for o in ordenes %}
+                        <option
+                            value="{{ o.id_ordenp }}"
+                            {{ 'selected' if orden_id == o.id_ordenp }}
+                        >
+                            #{{ o.id_ordenp }} — {{ o.producto_codigo }} {{ o.producto_nombre }}
+                        </option>
+                        {% endfor %}
                     </select>
+
+                    <div class="form-text">
+                        Solo aparecen las órdenes pendientes.
+                    </div>
+
+                    {% endif %}
 
                 </div>
 
@@ -95,6 +129,15 @@ Nueva ruta de operación | Manufactura
                         <option value="">
                             Seleccione un centro de trabajo
                         </option>
+
+                        {% for c in centros %}
+                        <option
+                            value="{{ c.id_centro }}"
+                            {{ 'selected' if ruta and ruta.centro_id == c.id_centro }}
+                        >
+                            {{ c.codigo }} — {{ c.nombre }}{{ ' (' ~ c.maquina ~ ')' if c.maquina }}
+                        </option>
+                        {% endfor %}
                     </select>
 
                 </div>
@@ -117,6 +160,7 @@ Nueva ruta de operación | Manufactura
                         min="1"
                         step="1"
                         placeholder="Ej. 1"
+                        value="{{ ruta.secuencia if ruta else '' }}"
                         required
                     >
 
@@ -143,9 +187,10 @@ Nueva ruta de operación | Manufactura
                             id="tiempo_estandar"
                             name="tiempo_estandar"
                             class="form-control"
-                            min="0"
+                            min="0.01"
                             step="0.01"
                             placeholder="0.00"
+                            value="{{ '%.2f'|format(ruta.tiempo_estandar) if ruta else '' }}"
                             required
                         >
 
@@ -167,7 +212,7 @@ Nueva ruta de operación | Manufactura
     <div class="d-flex justify-content-end gap-2 mb-4">
 
         <a
-            href="{{ url_for('produccion.rutas') }}"
+            href="{{ url_for('produccion.rutas', orden_id=orden_id) }}"
             class="btn btn-light"
         >
             Cancelar
@@ -178,7 +223,7 @@ Nueva ruta de operación | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar ruta
+            {{ 'Guardar cambios' if ruta else 'Guardar ruta' }}
         </button>
 
     </div>

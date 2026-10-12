@@ -6,62 +6,51 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    const createComponentRow = () => {
-        const row = document.createElement("tr");
+    const firstRow = tableBody.querySelector(".component-row");
 
-        row.classList.add("component-row");
+    if (!firstRow) {
+        return;
+    }
 
-        row.innerHTML = `
-            <td>
-                <select
-                    name="producto_component_id[]"
-                    class="form-select"
-                    required
-                >
-                    <option value="">
-                        Seleccione un componente
-                    </option>
-                </select>
-            </td>
+    // La primera fila (que ya trae las opciones de componentes desde el servidor
+    // y los nombres de campo del formulario) se guarda limpia como modelo.
+    const rowTemplate = firstRow.cloneNode(true);
 
-            <td>
-                <input
-                    type="number"
-                    name="cantidad[]"
-                    class="form-control"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                >
-            </td>
+    rowTemplate.querySelectorAll("input:not([disabled])").forEach((input) => {
+        input.value = "";
+    });
 
-            <td>
-                <input
-                    type="text"
-                    class="form-control"
-                    value="-"
-                    disabled
-                >
-            </td>
+    rowTemplate.querySelectorAll("select").forEach((select) => {
+        select.selectedIndex = 0;
+    });
 
-            <td class="text-end">
-                <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm remove-component"
-                    title="Eliminar componente"
-                >
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+    rowTemplate.querySelector(".component-unit").value = "-";
 
-        return row;
-    };
 
     addButton.addEventListener("click", () => {
-        tableBody.appendChild(createComponentRow());
+        const row = rowTemplate.cloneNode(true);
+
+        tableBody.appendChild(row);
+
+        row.querySelector("select").focus();
     });
+
+
+    // Al elegir un componente se muestra su unidad de medida
+    tableBody.addEventListener("change", (event) => {
+        const select = event.target.closest("select[name='producto_component_id']");
+
+        if (!select) {
+            return;
+        }
+
+        const row = select.closest(".component-row");
+        const option = select.selectedOptions[0];
+
+        row.querySelector(".component-unit").value =
+            option && option.dataset.unidad ? option.dataset.unidad : "-";
+    });
+
 
     tableBody.addEventListener("click", (event) => {
         const removeButton = event.target.closest(".remove-component");
@@ -72,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const rows = tableBody.querySelectorAll(".component-row");
 
+        // Siempre debe quedar al menos una fila
         if (rows.length <= 1) {
             return;
         }

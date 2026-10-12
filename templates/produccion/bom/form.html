@@ -1,7 +1,9 @@
 {% extends "layouts/base.html" %}
 
+{# bom = None al crear; con datos al editar (solo codigo y nombre) #}
+
 {% block title %}
-Nueva BOM | Manufactura
+{{ 'Editar' if bom else 'Nueva' }} BOM | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -11,11 +13,16 @@ Nueva BOM | Manufactura
     <div>
 
         <h1 class="page-title">
-            Nueva lista de materiales
+            {{ 'Editar lista de materiales' if bom else 'Nueva lista de materiales' }}
         </h1>
 
         <p class="page-description">
-            Define los materiales necesarios para fabricar un producto.
+            {% if bom %}
+                Cambia el código o el nombre. El producto y los componentes se modifican
+                desde el detalle.
+            {% else %}
+                Define los materiales necesarios para fabricar un producto.
+            {% endif %}
         </p>
 
     </div>
@@ -51,6 +58,7 @@ Nueva BOM | Manufactura
                         id="codigo"
                         name="codigo"
                         placeholder="Ej. BOM-001"
+                        value="{{ bom.codigo if bom else '' }}"
                         required
                     >
 
@@ -72,13 +80,14 @@ Nueva BOM | Manufactura
                         id="nombre"
                         name="nombre"
                         placeholder="Ej. Mesa ejecutiva estándar"
+                        value="{{ bom.nombre if bom else '' }}"
                         required
                     >
 
                 </div>
 
 
-                <div class="col-md-8">
+                <div class="col-md-12">
 
                     <label
                         for="producto_id"
@@ -86,6 +95,18 @@ Nueva BOM | Manufactura
                     >
                         Producto a fabricar
                     </label>
+
+                    {% if bom %}
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="producto_id"
+                        value="{{ bom.producto_codigo }} — {{ bom.producto_nombre }}"
+                        disabled
+                    >
+
+                    {% else %}
 
                     <select
                         class="form-select"
@@ -98,40 +119,19 @@ Nueva BOM | Manufactura
                             Seleccione un producto
                         </option>
 
+                        {% for p in productos_terminados %}
+                        <option value="{{ p.id_producto }}">
+                            {{ p.codigo }} — {{ p.nombre }}
+                        </option>
+                        {% endfor %}
+
                     </select>
 
                     <div class="form-text">
-                        Aquí se cargarán los productos disponibles desde el backend.
+                        Solo aparecen los productos terminados activos.
                     </div>
 
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <select
-                        class="form-select"
-                        id="estado"
-                        name="estado"
-                        required
-                    >
-
-                        <option value="ACTIVA">
-                            Activa
-                        </option>
-
-                        <option value="INACTIVA">
-                            Inactiva
-                        </option>
-
-                    </select>
+                    {% endif %}
 
                 </div>
 
@@ -141,6 +141,8 @@ Nueva BOM | Manufactura
 
     </div>
 
+
+    {% if not bom %}
 
     <div class="app-card mb-4">
 
@@ -202,20 +204,29 @@ Nueva BOM | Manufactura
 
                         <td>
                             <select
-                                name="producto_component_id[]"
+                                name="producto_component_id"
                                 class="form-select"
                                 required
                             >
                                 <option value="">
                                     Seleccione un componente
                                 </option>
+
+                                {% for m in materias_primas %}
+                                <option
+                                    value="{{ m.id_producto }}"
+                                    data-unidad="{{ m.unidad_medida }}"
+                                >
+                                    {{ m.codigo }} — {{ m.nombre }}
+                                </option>
+                                {% endfor %}
                             </select>
                         </td>
 
                         <td>
                             <input
                                 type="number"
-                                name="cantidad[]"
+                                name="cantidad"
                                 class="form-control"
                                 min="0.01"
                                 step="0.01"
@@ -227,7 +238,7 @@ Nueva BOM | Manufactura
                         <td>
                             <input
                                 type="text"
-                                class="form-control"
+                                class="form-control component-unit"
                                 value="-"
                                 disabled
                             >
@@ -255,10 +266,12 @@ Nueva BOM | Manufactura
 
 </div>
 
+    {% endif %}
+
     <div class="d-flex justify-content-end gap-2 mb-4">
 
     <a
-        href="{{ url_for('produccion.bom') }}"
+        href="{{ url_for('produccion.bom_detalle', bom_id=bom.id_bom) if bom else url_for('produccion.bom') }}"
         class="btn btn-light"
     >
         Cancelar
@@ -269,7 +282,7 @@ Nueva BOM | Manufactura
         class="btn btn-primary"
     >
         <i class="bi bi-check-lg me-1"></i>
-        Guardar BOM
+        {{ 'Guardar cambios' if bom else 'Guardar BOM' }}
     </button>
 
 </div>
@@ -281,8 +294,10 @@ Nueva BOM | Manufactura
 
 {% block scripts %}
 
+{% if not bom %}
 <script
     src="{{ url_for('static', filename='js/bom-form.js') }}">
 </script>
+{% endif %}
 
 {% endblock %}

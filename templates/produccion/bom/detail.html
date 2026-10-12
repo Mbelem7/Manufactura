@@ -6,6 +6,10 @@ Detalle BOM | Manufactura
 
 {% block content %}
 
+{# Mientras la BOM este activa se pueden editar sus componentes #}
+{% set editable = bom.estado == 'activo' %}
+{% set usados = componentes|map(attribute='producto_component_id')|list %}
+
 <div class="page-header">
 
     <div>
@@ -28,13 +32,31 @@ Detalle BOM | Manufactura
             Volver
         </a>
 
+        {% if editable %}
+
         <a
-            href="#"
+            href="{{ url_for('produccion.bom_editar', bom_id=bom.id_bom) }}"
             class="btn btn-outline-primary"
         >
             <i class="bi bi-pencil me-1"></i>
             Editar
         </a>
+
+        <form
+            method="POST"
+            action="{{ url_for('produccion.bom_baja', bom_id=bom.id_bom) }}"
+            onsubmit="return confirm('¿Eliminar esta lista de materiales?');"
+        >
+            <button
+                type="submit"
+                class="btn btn-outline-danger"
+            >
+                <i class="bi bi-trash me-1"></i>
+                Eliminar
+            </button>
+        </form>
+
+        {% endif %}
 
     </div>
 
@@ -59,7 +81,7 @@ Detalle BOM | Manufactura
                     </div>
 
                     <div class="fw-semibold">
-                        BOM-001
+                        {{ bom.codigo }}
                     </div>
                 </div>
 
@@ -69,7 +91,7 @@ Detalle BOM | Manufactura
                     </div>
 
                     <div class="fw-semibold">
-                        Mesa ejecutiva estándar
+                        {{ bom.nombre }}
                     </div>
                 </div>
 
@@ -79,7 +101,7 @@ Detalle BOM | Manufactura
                     </div>
 
                     <div>
-                        Mesa ejecutiva
+                        {{ bom.producto_codigo }} — {{ bom.producto_nombre }}
                     </div>
                 </div>
 
@@ -88,9 +110,15 @@ Detalle BOM | Manufactura
                         Estado
                     </div>
 
+                    {% if bom.estado == 'activo' %}
                     <span class="badge text-bg-success">
                         Activa
                     </span>
+                    {% else %}
+                    <span class="badge text-bg-secondary">
+                        Inactiva
+                    </span>
+                    {% endif %}
                 </div>
 
                 <div>
@@ -99,7 +127,7 @@ Detalle BOM | Manufactura
                     </div>
 
                     <div>
-                        05/10/2026
+                        {{ bom.fecha_creacion.strftime('%d/%m/%Y') if bom.fecha_creacion }}
                     </div>
                 </div>
 
@@ -124,12 +152,12 @@ Detalle BOM | Manufactura
                         </h5>
 
                         <p class="text-muted mb-0">
-                            Materiales requeridos para fabricar el producto.
+                            Materiales requeridos para fabricar una unidad del producto.
                         </p>
                     </div>
 
                     <span class="badge rounded-pill text-bg-light">
-                        3 componentes
+                        {{ componentes|length }} {{ 'componente' if componentes|length == 1 else 'componentes' }}
                     </span>
 
                 </div>
@@ -147,37 +175,195 @@ Detalle BOM | Manufactura
                             <th>Código</th>
                             <th>Cantidad</th>
                             <th>Unidad</th>
+
+                            {% if editable %}
+                            <th class="text-end">Acciones</th>
+                            {% endif %}
                         </tr>
                     </thead>
 
                     <tbody>
 
-                        <tr>
-                            <td>Madera de pino</td>
-                            <td>MAT-001</td>
-                            <td>4.00</td>
-                            <td>Unidad</td>
-                        </tr>
+                        {% for c in componentes %}
 
                         <tr>
-                            <td>Tornillo 3/4</td>
-                            <td>MAT-002</td>
-                            <td>20.00</td>
-                            <td>Unidad</td>
+
+                            <td>{{ c.producto_nombre }}</td>
+
+                            <td>{{ c.producto_codigo }}</td>
+
+                            {% if editable %}
+
+                            <td style="width: 18%;">
+                                <input
+                                    form="actualizar-{{ c.id_detalle_bom }}"
+                                    type="number"
+                                    name="cantidad"
+                                    class="form-control form-control-sm"
+                                    min="0.01"
+                                    step="0.01"
+                                    value="{{ '%.2f'|format(c.cantidad) }}"
+                                    required
+                                >
+                            </td>
+
+                            {% else %}
+
+                            <td>{{ "{:,.2f}".format(c.cantidad) }}</td>
+
+                            {% endif %}
+
+                            <td>{{ c.producto_unidad_medida }}</td>
+
+                            {% if editable %}
+
+                            <td class="text-end text-nowrap">
+
+                                <form
+                                    id="actualizar-{{ c.id_detalle_bom }}"
+                                    method="POST"
+                                    action="{{ url_for('produccion.bom_componente_actualizar', detalle_id=c.id_detalle_bom) }}"
+                                    class="d-inline"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-light"
+                                        title="Guardar cambios"
+                                    >
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('produccion.bom_componente_eliminar', detalle_id=c.id_detalle_bom) }}"
+                                    class="d-inline"
+                                    onsubmit="return confirm('¿Eliminar este componente?');"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-light text-danger"
+                                        title="Eliminar"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+
+                            </td>
+
+                            {% endif %}
+
                         </tr>
 
+                        {% else %}
+
                         <tr>
-                            <td>Barniz transparente</td>
-                            <td>MAT-003</td>
-                            <td>2.00</td>
-                            <td>Litro</td>
+
+                            <td colspan="{{ 5 if editable else 4 }}">
+
+                                <div class="text-center py-4 text-muted">
+                                    Esta lista de materiales aún no tiene componentes.
+                                </div>
+
+                            </td>
+
                         </tr>
+
+                        {% endfor %}
 
                     </tbody>
 
                 </table>
 
             </div>
+
+
+            {% if editable %}
+
+            <div class="p-4 border-top">
+
+                <h6 class="mb-3">
+                    Agregar componente
+                </h6>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('produccion.bom_componente_agregar', bom_id=bom.id_bom) }}"
+                >
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="nuevo_componente"
+                                class="form-label"
+                            >
+                                Material
+                            </label>
+
+                            <select
+                                id="nuevo_componente"
+                                name="producto_component_id"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Seleccione un componente
+                                </option>
+
+                                {% for m in materias_primas if m.id_producto not in usados %}
+                                <option value="{{ m.id_producto }}">
+                                    {{ m.codigo }} — {{ m.nombre }} ({{ m.unidad_medida }})
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-3">
+
+                            <label
+                                for="nueva_cantidad"
+                                class="form-label"
+                            >
+                                Cantidad
+                            </label>
+
+                            <input
+                                type="number"
+                                id="nueva_cantidad"
+                                name="cantidad"
+                                class="form-control"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-3 d-grid">
+
+                            <button
+                                type="submit"
+                                class="btn btn-outline-primary"
+                            >
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Agregar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            {% endif %}
 
         </div>
 

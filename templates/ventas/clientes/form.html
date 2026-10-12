@@ -1,7 +1,10 @@
 {% extends "layouts/base.html" %}
 
+{# cliente = None al crear; con datos al editar #}
+{% set c = cliente or {} %}
+
 {% block title %}
-Nuevo cliente | Manufactura
+{{ 'Editar' if cliente else 'Nuevo' }} cliente | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,7 +13,7 @@ Nuevo cliente | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nuevo cliente
+            {{ 'Editar cliente' if cliente else 'Nuevo cliente' }}
         </h1>
 
         <p class="page-description">
@@ -48,6 +51,7 @@ Nuevo cliente | Manufactura
                         name="codigo"
                         class="form-control"
                         placeholder="Ej. CLI-001"
+                        value="{{ c.codigo or '' }}"
                         required
                     >
 
@@ -69,6 +73,7 @@ Nuevo cliente | Manufactura
                         name="empresa"
                         class="form-control"
                         placeholder="Ej. Comercial San José"
+                        value="{{ c.empresa or '' }}"
                         required
                     >
 
@@ -105,6 +110,7 @@ Nuevo cliente | Manufactura
                         id="nombre_1"
                         name="nombre_1"
                         class="form-control"
+                        value="{{ c.persona_nombre_1 or '' }}"
                         required
                     >
 
@@ -125,6 +131,7 @@ Nuevo cliente | Manufactura
                         id="nombre_2"
                         name="nombre_2"
                         class="form-control"
+                        value="{{ c.persona_nombre_2 or '' }}"
                     >
 
                 </div>
@@ -144,6 +151,7 @@ Nuevo cliente | Manufactura
                         id="apellido_1"
                         name="apellido_1"
                         class="form-control"
+                        value="{{ c.persona_apellido_1 or '' }}"
                         required
                     >
 
@@ -164,6 +172,7 @@ Nuevo cliente | Manufactura
                         id="apellido_2"
                         name="apellido_2"
                         class="form-control"
+                        value="{{ c.persona_apellido_2 or '' }}"
                     >
 
                 </div>
@@ -183,12 +192,13 @@ Nuevo cliente | Manufactura
                         id="telefono"
                         name="telefono"
                         class="form-control"
+                        value="{{ c.persona_telefono or '' }}"
                     >
 
                 </div>
 
 
-                <div class="col-md-5">
+                <div class="col-md-8">
 
                     <label
                         for="correo"
@@ -202,26 +212,7 @@ Nuevo cliente | Manufactura
                         id="correo"
                         name="correo"
                         class="form-control"
-                    >
-
-                </div>
-
-
-                <div class="col-md-3">
-
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <input
-                        type="text"
-                        id="estado"
-                        name="estado"
-                        class="form-control"
-                        placeholder="Estado"
+                        value="{{ c.persona_correo or '' }}"
                         required
                     >
 
@@ -248,7 +239,7 @@ Nuevo cliente | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar cliente
+            {{ 'Guardar cambios' if cliente else 'Guardar cliente' }}
         </button>
 
     </div>

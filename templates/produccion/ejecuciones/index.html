@@ -45,11 +45,34 @@ Ejecuciones de producción | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por orden de producción..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <select
+                    id="filtroEstado"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todas ({{ historial|length }})
+                    </option>
+
+                    <option value="en-curso">
+                        En curso ({{ en_curso|length }})
+                    </option>
+
+                    <option value="terminada">
+                        Terminadas ({{ historial|length - en_curso|length }})
+                    </option>
+                </select>
 
             </div>
 
@@ -80,6 +103,81 @@ Ejecuciones de producción | Manufactura
 
             <tbody>
 
+                {% for e in historial %}
+
+                <tr
+                    data-fila
+                    data-estado="{{ 'terminada' if e.fecha_fin else 'en-curso' }}"
+                >
+
+                    <td>#{{ e.id_produccion }}</td>
+
+                    <td>
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=e.ordenp_id) }}"
+                            class="text-decoration-none"
+                        >
+                            #{{ e.ordenp_id }}
+                        </a>
+                        <span class="text-muted small">
+                            {{ e.producto_nombre }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ e.fecha_inicio.strftime('%d/%m/%Y %H:%M') if e.fecha_inicio }}
+                    </td>
+
+                    <td>
+                        {% if e.fecha_fin %}
+                            {{ e.fecha_fin.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                            <span class="badge text-bg-primary">En curso</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+                        {{ e.cantidad_aceptada if e.fecha_fin else '—' }}
+                    </td>
+
+                    <td class="text-end">
+                        {{ e.cantidad_rechazada if e.fecha_fin else '—' }}
+                    </td>
+
+                    <td>{{ e.nombre_1 }} {{ e.apellido_1 }}</td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=e.ordenp_id) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver orden"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        {% if not e.fecha_fin %}
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-success"
+                            data-bs-toggle="modal"
+                            data-bs-target="#terminarModal"
+                            data-action="{{ url_for('produccion.ejecucion_terminar', produccion_id=e.id_produccion) }}"
+                            data-orden="#{{ e.ordenp_id }} — {{ e.producto_nombre }}"
+                        >
+                            <i class="bi bi-stop-circle me-1"></i>
+                            Terminar
+                        </button>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
                     <td colspan="8">
@@ -96,6 +194,8 @@ Ejecuciones de producción | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -104,4 +204,228 @@ Ejecuciones de producción | Manufactura
 
 </div>
 
+
+{# Formulario para terminar una ejecucion (se reutiliza para todas las filas) #}
+<div
+    class="modal fade"
+    id="terminarModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form method="POST">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Terminar ejecución
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <p class="text-muted">
+                        Orden <strong id="terminarOrden"></strong>
+                    </p>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="cantidad_aceptada"
+                                class="form-label"
+                            >
+                                Cantidad aceptada
+                            </label>
+
+                            <input
+                                type="number"
+                                id="cantidad_aceptada"
+                                name="cantidad_aceptada"
+                                class="form-control"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="cantidad_rechazada"
+                                class="form-label"
+                            >
+                                Cantidad rechazada
+                            </label>
+
+                            <input
+                                type="number"
+                                id="cantidad_rechazada"
+                                name="cantidad_rechazada"
+                                class="form-control"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-12">
+
+                            <label
+                                for="almacen_mp_id"
+                                class="form-label"
+                            >
+                                Almacén de materia prima
+                            </label>
+
+                            <select
+                                id="almacen_mp_id"
+                                name="almacen_mp_id"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Seleccione un almacén
+                                </option>
+
+                                {% for alm in almacenes %}
+                                <option value="{{ alm.id_almacen }}">
+                                    {{ alm.codigo }} — {{ alm.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="form-text">
+                                De aquí se descuenta la materia prima.
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-12">
+
+                            <label
+                                for="almacen_pt_id"
+                                class="form-label"
+                            >
+                                Almacén de producto terminado
+                            </label>
+
+                            <select
+                                id="almacen_pt_id"
+                                name="almacen_pt_id"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Seleccione un almacén
+                                </option>
+
+                                {% for alm in almacenes %}
+                                <option value="{{ alm.id_almacen }}">
+                                    {{ alm.codigo }} — {{ alm.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="form-text">
+                                Aquí entra la cantidad aceptada.
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0">
+                        Al terminar se descuenta la materia prima según la lista de materiales
+                        (aceptadas más rechazadas), se suma el producto terminado al inventario
+                        y la orden pasa a finalizada.
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Terminar ejecución
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Busqueda y filtro de estado sobre la tabla (no recargan la pagina)
+    const buscador = document.getElementById("buscar");
+    const filtro = document.getElementById("filtroEstado");
+
+    function filtrar() {
+        const texto = buscador.value.toLowerCase();
+        const estado = filtro.value;
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            const coincideTexto = fila.textContent.toLowerCase().includes(texto);
+            const coincideEstado = !estado || fila.dataset.estado === estado;
+
+            fila.hidden = !(coincideTexto && coincideEstado);
+        });
+    }
+
+    buscador.addEventListener("input", filtrar);
+    filtro.addEventListener("change", filtrar);
+
+
+    // El modal "Terminar" se prepara con la ejecucion de la fila pulsada
+    const modal = document.getElementById("terminarModal");
+
+    modal.addEventListener("show.bs.modal", function (event) {
+        const boton = event.relatedTarget;
+
+        modal.querySelector("form").action = boton.dataset.action;
+        document.getElementById("terminarOrden").textContent = boton.dataset.orden;
+    });
+</script>
 {% endblock %}

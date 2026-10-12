@@ -1,7 +1,9 @@
 {% extends "layouts/base.html" %}
 
+{# orden = None al crear; con datos al editar (el producto no se cambia) #}
+
 {% block title %}
-Nueva orden de producción | Manufactura
+{{ 'Editar' if orden else 'Nueva' }} orden de producción | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,11 +12,15 @@ Nueva orden de producción | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nueva orden de producción
+            {{ 'Editar orden de producción' if orden else 'Nueva orden de producción' }}
         </h1>
 
         <p class="page-description">
-            Registra una orden para la fabricación de un producto.
+            {% if orden %}
+                Cambia la lista de materiales, la cantidad o el lote. El producto no se puede modificar.
+            {% else %}
+                Registra una orden para la fabricación de un producto.
+            {% endif %}
         </p>
     </div>
 
@@ -42,6 +48,18 @@ Nueva orden de producción | Manufactura
                         Producto
                     </label>
 
+                    {% if orden %}
+
+                    <input
+                        type="text"
+                        id="producto_id"
+                        class="form-control"
+                        value="{{ orden.producto_codigo }} — {{ orden.producto_nombre }}"
+                        disabled
+                    >
+
+                    {% else %}
+
                     <select
                         id="producto_id"
                         name="producto_id"
@@ -51,7 +69,22 @@ Nueva orden de producción | Manufactura
                         <option value="">
                             Seleccione un producto
                         </option>
+
+                        {% for p in productos_terminados %}
+                        <option
+                            value="{{ p.id_producto }}"
+                            data-unidad="{{ p.unidad_medida }}"
+                        >
+                            {{ p.codigo }} — {{ p.nombre }}
+                        </option>
+                        {% endfor %}
                     </select>
+
+                    <div class="form-text">
+                        Solo aparecen los productos terminados activos.
+                    </div>
+
+                    {% endif %}
 
                 </div>
 
@@ -74,35 +107,54 @@ Nueva orden de producción | Manufactura
                         <option value="">
                             Seleccione una BOM
                         </option>
+
+                        {% for b in boms if b.estado == 'activo' %}
+                        <option
+                            value="{{ b.id_bom }}"
+                            data-producto="{{ b.producto_id }}"
+                            {{ 'selected' if orden and orden.bom_id == b.id_bom }}
+                        >
+                            {{ b.codigo }} — {{ b.nombre }}
+                        </option>
+                        {% endfor %}
                     </select>
+
+                    {% if not orden %}
+                    <div class="form-text">
+                        Se muestran las listas de materiales del producto elegido.
+                    </div>
+                    {% endif %}
 
                 </div>
 
 
-                <div class="col-md-4">
+                <div class="col-md-6">
 
                     <label
-                        for="lote_id"
+                        for="lote_codigo"
                         class="form-label"
                     >
                         Lote
                     </label>
 
-                    <select
-                        id="lote_id"
-                        name="lote_id"
-                        class="form-select"
+                    <input
+                        type="text"
+                        id="lote_codigo"
+                        name="lote_codigo"
+                        class="form-control"
+                        placeholder="Ej. LOT-001"
+                        value="{{ orden.lote_codigo or '' if orden else '' }}"
                         required
                     >
-                        <option value="">
-                            Seleccione un lote
-                        </option>
-                    </select>
+
+                    <div class="form-text">
+                        Código del lote que se va a producir. Si no existe, se crea.
+                    </div>
 
                 </div>
 
 
-                <div class="col-md-4">
+                <div class="col-md-6">
 
                     <label
                         for="cantidad"
@@ -111,37 +163,28 @@ Nueva orden de producción | Manufactura
                         Cantidad
                     </label>
 
-                    <input
-                        type="number"
-                        id="cantidad"
-                        name="cantidad"
-                        class="form-control"
-                        min="0.01"
-                        step="0.01"
-                        placeholder="0.00"
-                        required
-                    >
+                    <div class="input-group">
 
-                </div>
+                        <input
+                            type="number"
+                            id="cantidad"
+                            name="cantidad"
+                            class="form-control"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="0.00"
+                            value="{{ '%.2f'|format(orden.cantidad) if orden else '' }}"
+                            required
+                        >
 
+                        <span
+                            class="input-group-text"
+                            id="unidad"
+                        >
+                            {{ orden.producto_unidad_medida if orden else 'unidad' }}
+                        </span>
 
-                <div class="col-md-4">
-
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <input
-                        type="text"
-                        id="estado"
-                        name="estado"
-                        class="form-control"
-                        placeholder="Estado"
-                        required
-                    >
+                    </div>
 
                 </div>
 
@@ -155,7 +198,7 @@ Nueva orden de producción | Manufactura
     <div class="d-flex justify-content-end gap-2 mb-4">
 
         <a
-            href="{{ url_for('produccion.ordenes') }}"
+            href="{{ url_for('produccion.orden_detalle', orden_id=orden.id_ordenp) if orden else url_for('produccion.ordenes') }}"
             class="btn btn-light"
         >
             Cancelar
@@ -166,11 +209,68 @@ Nueva orden de producción | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar orden
+            {{ 'Guardar cambios' if orden else 'Guardar orden' }}
         </button>
 
     </div>
 
 </form>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+{% if not orden %}
+<script>
+    // Las listas de materiales mostradas dependen del producto elegido
+    (function () {
+        const producto = document.getElementById("producto_id");
+        const bom = document.getElementById("bom_id");
+        const unidad = document.getElementById("unidad");
+
+        function actualizar() {
+            const id = producto.value;
+            let coincidencias = [];
+
+            Array.from(bom.options).forEach(function (opcion) {
+                if (!opcion.value) {
+                    return;
+                }
+
+                const coincide = opcion.dataset.producto === id;
+
+                opcion.hidden = !coincide;
+                opcion.disabled = !coincide;
+
+                if (coincide) {
+                    coincidencias.push(opcion);
+                }
+            });
+
+            // Si la BOM elegida ya no corresponde al producto, se limpia;
+            // si el producto tiene una sola, se selecciona sola
+            if (bom.selectedOptions[0] && bom.selectedOptions[0].disabled) {
+                bom.value = "";
+            }
+
+            if (coincidencias.length === 1) {
+                bom.value = coincidencias[0].value;
+            }
+
+            const opcionProducto = producto.selectedOptions[0];
+
+            unidad.textContent =
+                opcionProducto && opcionProducto.dataset.unidad
+                    ? opcionProducto.dataset.unidad
+                    : "unidad";
+        }
+
+        producto.addEventListener("change", actualizar);
+
+        actualizar();
+    })();
+</script>
+{% endif %}
 
 {% endblock %}

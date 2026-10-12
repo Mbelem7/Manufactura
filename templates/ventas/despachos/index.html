@@ -45,11 +45,43 @@ Despachos | Manufactura
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por código u orden de venta..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <form method="GET">
+
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Todos los estados</option>
+
+                        <option
+                            value="despachado"
+                            {{ 'selected' if request.args.get('estado') == 'despachado' }}
+                        >
+                            Despachados
+                        </option>
+
+                        <option
+                            value="inactivo"
+                            {{ 'selected' if request.args.get('estado') == 'inactivo' }}
+                        >
+                            Inactivos
+                        </option>
+                    </select>
+
+                </form>
 
             </div>
 
@@ -78,6 +110,89 @@ Despachos | Manufactura
 
             <tbody>
 
+                {% for desp in despachos %}
+
+                <tr data-fila>
+
+                    <td>
+                        <a
+                            href="{{ url_for('ventas.despacho_detalle', despacho_id=desp.id_despacho) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            {{ desp.codigo }}
+                        </a>
+                    </td>
+
+                    <td>
+                        <a
+                            href="{{ url_for('ventas.orden_detalle', orden_id=desp.ordenv_id) }}"
+                            class="text-decoration-none"
+                        >
+                            #{{ desp.ordenv_id }}
+                        </a>
+                    </td>
+
+                    <td>
+                        {{ desp.almacen_codigo }} — {{ desp.almacen_nombre }}
+                    </td>
+
+                    <td>
+                        {% if desp.estado == 'despachado' %}
+                            <span class="badge text-bg-success">Despachado</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ desp.estado|capitalize }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ desp.fecha_creacion.strftime('%d/%m/%Y %H:%M') if desp.fecha_creacion }}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('ventas.despacho_detalle', despacho_id=desp.id_despacho) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver detalle"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        {% if desp.estado == 'despachado' %}
+
+                        <a
+                            href="{{ url_for('ventas.despacho_editar', despacho_id=desp.id_despacho) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('ventas.despacho_baja', despacho_id=desp.id_despacho) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar este despacho? Las existencias que ya salieron del inventario no se devuelven.');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
                     <td colspan="6">
@@ -94,6 +209,8 @@ Despachos | Manufactura
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -102,4 +219,20 @@ Despachos | Manufactura
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

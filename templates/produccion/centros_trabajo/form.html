@@ -1,7 +1,10 @@
 {% extends "layouts/base.html" %}
 
+{# centro = None al crear; con datos al editar #}
+{% set c = centro or {} %}
+
 {% block title %}
-Nuevo centro de trabajo | Manufactura
+{{ 'Editar' if centro else 'Nuevo' }} centro de trabajo | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,7 +13,7 @@ Nuevo centro de trabajo | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nuevo centro de trabajo
+            {{ 'Editar centro de trabajo' if centro else 'Nuevo centro de trabajo' }}
         </h1>
 
         <p class="page-description">
@@ -48,6 +51,7 @@ Nuevo centro de trabajo | Manufactura
                         name="codigo"
                         class="form-control"
                         placeholder="Ej. CT-001"
+                        value="{{ c.codigo or '' }}"
                         required
                     >
 
@@ -69,13 +73,14 @@ Nuevo centro de trabajo | Manufactura
                         name="nombre"
                         class="form-control"
                         placeholder="Ej. Área de corte"
+                        value="{{ c.nombre or '' }}"
                         required
                     >
 
                 </div>
 
 
-                <div class="col-md-8">
+                <div class="col-md-12">
 
                     <label
                         for="maquina"
@@ -90,27 +95,7 @@ Nuevo centro de trabajo | Manufactura
                         name="maquina"
                         class="form-control"
                         placeholder="Ej. Sierra industrial"
-                    >
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <input
-                        type="text"
-                        id="estado"
-                        name="estado"
-                        class="form-control"
-                        placeholder="Estado"
-                        required
+                        value="{{ c.maquina or '' }}"
                     >
 
                 </div>
@@ -136,7 +121,7 @@ Nuevo centro de trabajo | Manufactura
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar centro de trabajo
+            {{ 'Guardar cambios' if centro else 'Guardar centro de trabajo' }}
         </button>
 
     </div>

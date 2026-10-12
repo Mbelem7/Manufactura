@@ -6,11 +6,13 @@ Detalle de orden de producción | Manufactura
 
 {% block content %}
 
+{% set colores = {'pendiente': 'warning', 'en_proceso': 'primary', 'finalizada': 'success', 'cancelada': 'secondary'} %}
+
 <div class="page-header">
 
     <div>
         <h1 class="page-title">
-            Orden de producción
+            Orden de producción #{{ orden.id_ordenp }}
         </h1>
 
         <p class="page-description">
@@ -33,7 +35,7 @@ Detalle de orden de producción | Manufactura
 
     <div class="col-lg-4">
 
-        <div class="app-card h-100">
+        <div class="app-card mb-4">
 
             <div class="p-4">
 
@@ -48,7 +50,7 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div class="fw-semibold">
-                        {{ orden.id_ordenp if orden else "-" }}
+                        {{ orden.id_ordenp }}
                     </div>
 
                 </div>
@@ -61,7 +63,7 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div class="fw-semibold">
-                        {{ orden.producto.nombre if orden and orden.producto else "-" }}
+                        {{ orden.producto_codigo }} — {{ orden.producto_nombre }}
                     </div>
 
                 </div>
@@ -74,7 +76,16 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div>
-                        {{ orden.bom.codigo if orden and orden.bom else "-" }}
+                        {% if orden.bom_id %}
+                        <a
+                            href="{{ url_for('produccion.bom_detalle', bom_id=orden.bom_id) }}"
+                            class="text-decoration-none"
+                        >
+                            {{ orden.bom_codigo }} — {{ orden.bom_nombre }}
+                        </a>
+                        {% else %}
+                        —
+                        {% endif %}
                     </div>
 
                 </div>
@@ -87,7 +98,7 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div>
-                        {{ orden.lote.codigo if orden and orden.lote else "-" }}
+                        {{ orden.lote_codigo or '—' }}
                     </div>
 
                 </div>
@@ -100,7 +111,8 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div>
-                        {{ orden.cantidad if orden else "-" }}
+                        {{ "{:,.2f}".format(orden.cantidad) }}
+                        {{ orden.producto_unidad_medida }}
                     </div>
 
                 </div>
@@ -113,7 +125,9 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div>
-                        {{ orden.estado if orden else "-" }}
+                        <span class="badge text-bg-{{ colores.get(orden.estado, 'secondary') }}">
+                            {{ orden.estado|replace('_', ' ')|capitalize }}
+                        </span>
                     </div>
 
                 </div>
@@ -126,7 +140,7 @@ Detalle de orden de producción | Manufactura
                     </div>
 
                     <div>
-                        {{ orden.fecha_creacion if orden else "-" }}
+                        {{ orden.fecha_creacion.strftime('%d/%m/%Y %H:%M') if orden.fecha_creacion }}
                     </div>
 
                 </div>
@@ -135,22 +149,82 @@ Detalle de orden de producción | Manufactura
 
         </div>
 
+
+        {% if orden.estado in ['pendiente', 'en_proceso'] %}
+
+        <div class="d-grid gap-2 mb-4">
+
+            <a
+                href="{{ url_for('produccion.ejecucion_nueva', orden_id=orden.id_ordenp) }}"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-play-circle me-1"></i>
+                Iniciar ejecución
+            </a>
+
+            {% if editable %}
+
+            <a
+                href="{{ url_for('produccion.orden_editar', orden_id=orden.id_ordenp) }}"
+                class="btn btn-light"
+            >
+                <i class="bi bi-pencil me-1"></i>
+                Editar orden
+            </a>
+
+            <form
+                method="POST"
+                action="{{ url_for('produccion.orden_baja', orden_id=orden.id_ordenp) }}"
+                onsubmit="return confirm('¿Eliminar esta orden de producción?');"
+                class="d-grid"
+            >
+                <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                >
+                    <i class="bi bi-trash me-1"></i>
+                    Eliminar orden
+                </button>
+            </form>
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
     </div>
 
 
     <div class="col-lg-8">
 
-        <div class="app-card">
+        <div class="app-card mb-4">
 
             <div class="p-4 border-bottom">
 
-                <h5 class="mb-1">
-                    Ruta de operación
-                </h5>
+                <div class="d-flex align-items-center justify-content-between">
 
-                <p class="text-muted mb-0">
-                    Secuencia de centros de trabajo asociados a esta orden.
-                </p>
+                    <div>
+                        <h5 class="mb-1">
+                            Ruta de operación
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Secuencia de centros de trabajo asociados a esta orden.
+                        </p>
+                    </div>
+
+                    {% if editable %}
+                    <a
+                        href="{{ url_for('produccion.ruta_nueva', orden_id=orden.id_ordenp) }}"
+                        class="btn btn-sm btn-outline-primary"
+                    >
+                        <i class="bi bi-plus-lg me-1"></i>
+                        Agregar operación
+                    </a>
+                    {% endif %}
+
+                </div>
 
             </div>
 
@@ -164,7 +238,6 @@ Detalle de orden de producción | Manufactura
                             <th>Secuencia</th>
                             <th>Código</th>
                             <th>Centro de trabajo</th>
-                            <th>Máquina</th>
                             <th>Tiempo estándar</th>
                         </tr>
                     </thead>
@@ -172,41 +245,33 @@ Detalle de orden de producción | Manufactura
 
                     <tbody>
 
-                        {% if orden and orden.rutas %}
+                        {% for r in rutas|sort(attribute='secuencia') if r.estado == 'activo' %}
 
-                            {% for ruta in orden.rutas %}
+                            <tr>
 
-                                <tr>
+                                <td>
+                                    {{ r.secuencia }}
+                                </td>
 
-                                    <td>
-                                        {{ ruta.secuencia }}
-                                    </td>
+                                <td>
+                                    {{ r.codigo }}
+                                </td>
 
-                                    <td>
-                                        {{ ruta.codigo }}
-                                    </td>
+                                <td>
+                                    {{ r.centro_trabajo_codigo }} — {{ r.centro_trabajo_nombre }}
+                                </td>
 
-                                    <td>
-                                        {{ ruta.centro.nombre if ruta.centro else "-" }}
-                                    </td>
+                                <td>
+                                    {{ "{:,.2f}".format(r.tiempo_estandar) }}
+                                </td>
 
-                                    <td>
-                                        {{ ruta.centro.maquina if ruta.centro else "-" }}
-                                    </td>
-
-                                    <td>
-                                        {{ ruta.tiempo_estandar }}
-                                    </td>
-
-                                </tr>
-
-                            {% endfor %}
+                            </tr>
 
                         {% else %}
 
                             <tr>
 
-                                <td colspan="5">
+                                <td colspan="4">
 
                                     <div class="text-center py-4 text-muted">
                                         No hay operaciones asociadas a esta orden.
@@ -216,7 +281,166 @@ Detalle de orden de producción | Manufactura
 
                             </tr>
 
-                        {% endif %}
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <div class="app-card mb-4">
+
+            <div class="p-4 border-bottom">
+
+                <h5 class="mb-1">
+                    Materia prima requerida
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Lo que necesita la orden según su lista de materiales, comparado con el stock actual.
+                </p>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th class="text-end">Necesaria</th>
+                            <th class="text-end">Disponible</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for q in requerimientos %}
+
+                        <tr>
+
+                            <td>{{ q.codigo }} — {{ q.nombre }}</td>
+
+                            <td class="text-end">
+                                {{ "{:,.2f}".format(q.necesaria) }} {{ q.unidad }}
+                            </td>
+
+                            <td class="text-end">
+                                {{ "{:,.2f}".format(q.disponible) }} {{ q.unidad }}
+                            </td>
+
+                            <td>
+                                {% if q.suficiente %}
+                                    <span class="badge text-bg-success">Suficiente</span>
+                                {% else %}
+                                    <span class="badge text-bg-danger">Insuficiente</span>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+
+                            <td colspan="4">
+
+                                <div class="text-center py-4 text-muted">
+                                    La lista de materiales no tiene componentes.
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <div class="app-card">
+
+            <div class="p-4 border-bottom">
+
+                <h5 class="mb-1">
+                    Ejecuciones
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Registros de producción de esta orden.
+                </p>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Operador</th>
+                            <th class="text-end">Aceptada</th>
+                            <th class="text-end">Rechazada</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for e in ejecuciones %}
+
+                        <tr>
+
+                            <td>
+                                {{ e.fecha_inicio.strftime('%d/%m/%Y %H:%M') if e.fecha_inicio }}
+                            </td>
+
+                            <td>
+                                {% if e.fecha_fin %}
+                                    {{ e.fecha_fin.strftime('%d/%m/%Y %H:%M') }}
+                                {% else %}
+                                    <span class="badge text-bg-primary">En curso</span>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ e.nombre_1 }} {{ e.apellido_1 }}</td>
+
+                            <td class="text-end">{{ e.cantidad_aceptada }}</td>
+
+                            <td class="text-end">{{ e.cantidad_rechazada }}</td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+
+                            <td colspan="5">
+
+                                <div class="text-center py-4 text-muted">
+                                    Esta orden aún no tiene ejecuciones.
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
 
                     </tbody>
 

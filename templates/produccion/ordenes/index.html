@@ -6,6 +6,8 @@
 
 {% block content %}
 
+{% set colores = {'pendiente': 'warning', 'en_proceso': 'primary', 'finalizada': 'success', 'cancelada': 'secondary'} %}
+
 <div class="page-header">
 
     <div>
@@ -45,11 +47,45 @@
 
                     <input
                         type="search"
+                        id="buscar"
                         class="form-control"
                         placeholder="Buscar por producto o lote..."
                     >
 
                 </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <form method="GET">
+
+                    <select
+                        name="estado"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="">Todos los estados</option>
+
+                        <option value="pendiente" {{ 'selected' if estado == 'pendiente' }}>
+                            Pendientes
+                        </option>
+
+                        <option value="en_proceso" {{ 'selected' if estado == 'en_proceso' }}>
+                            En proceso
+                        </option>
+
+                        <option value="finalizada" {{ 'selected' if estado == 'finalizada' }}>
+                            Finalizadas
+                        </option>
+
+                        <option value="cancelada" {{ 'selected' if estado == 'cancelada' }}>
+                            Canceladas
+                        </option>
+                    </select>
+
+                </form>
 
             </div>
 
@@ -80,6 +116,83 @@
 
             <tbody>
 
+                {% for o in ordenes %}
+
+                <tr data-fila>
+
+                    <td>
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=o.id_ordenp) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            #{{ o.id_ordenp }}
+                        </a>
+                    </td>
+
+                    <td>{{ o.producto_codigo }} — {{ o.producto_nombre }}</td>
+
+                    <td>{{ o.bom_codigo or '—' }}</td>
+
+                    <td>{{ o.lote_codigo or '—' }}</td>
+
+                    <td>
+                        {{ "{:,.2f}".format(o.cantidad) }}
+                        {{ o.producto_unidad_medida }}
+                    </td>
+
+                    <td>
+                        <span class="badge text-bg-{{ colores.get(o.estado, 'secondary') }}">
+                            {{ o.estado|replace('_', ' ')|capitalize }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ o.fecha_creacion.strftime('%d/%m/%Y %H:%M') if o.fecha_creacion }}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=o.id_ordenp) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver detalle"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        {% if o.estado == 'pendiente' %}
+
+                        <a
+                            href="{{ url_for('produccion.orden_editar', orden_id=o.id_ordenp) }}"
+                            class="btn btn-sm btn-light"
+                            title="Editar"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('produccion.orden_baja', orden_id=o.id_ordenp) }}"
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar esta orden de producción?');"
+                        >
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-light text-danger"
+                                title="Eliminar"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
                 <tr>
 
                     <td colspan="8">
@@ -96,6 +209,8 @@
 
                 </tr>
 
+                {% endfor %}
+
             </tbody>
 
         </table>
@@ -104,4 +219,20 @@
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Filtro de la tabla mientras se escribe (no recarga la pagina)
+    const buscador = document.getElementById("buscar");
+
+    buscador.addEventListener("input", function () {
+        const texto = buscador.value.toLowerCase();
+
+        document.querySelectorAll("tbody tr[data-fila]").forEach(function (fila) {
+            fila.hidden = !fila.textContent.toLowerCase().includes(texto);
+        });
+    });
+</script>
 {% endblock %}

@@ -1,7 +1,12 @@
 {% extends "layouts/base.html" %}
 
+{# recepcion = None al crear; con datos al editar (solo se cambia el codigo) #}
+
+{# En una recepcion nueva, los productos solo aparecen cuando hay una orden pendiente elegida #}
+{% set puede = orden and orden.estado == 'pendiente' %}
+
 {% block title %}
-Nueva recepción | Manufactura
+{{ 'Editar' if recepcion else 'Nueva' }} recepción | Manufactura
 {% endblock %}
 
 {% block content %}
@@ -10,11 +15,16 @@ Nueva recepción | Manufactura
 
     <div>
         <h1 class="page-title">
-            Nueva recepción
+            {{ 'Editar recepción' if recepcion else 'Nueva recepción' }}
         </h1>
 
         <p class="page-description">
-            Registra los productos recibidos de una orden de compra.
+            {% if recepcion %}
+                Cambia el código de la recepción. La orden y el almacén no se pueden modificar
+                porque la mercancía ya ingresó al inventario.
+            {% else %}
+                Registra los productos recibidos de una orden de compra.
+            {% endif %}
         </p>
     </div>
 
@@ -32,6 +42,95 @@ Nueva recepción | Manufactura
             </h5>
 
             <div class="row g-3">
+
+                {% if recepcion %}
+
+                <div class="col-md-4">
+
+                    <label
+                        for="codigo"
+                        class="form-label"
+                    >
+                        Código
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="Ej. REC-001"
+                        value="{{ recepcion.codigo }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Orden de compra
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        value="#{{ recepcion.ordenc_id }}"
+                        disabled
+                    >
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Almacén destino
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        value="{{ recepcion.almacen_codigo }} — {{ recepcion.almacen_nombre }}"
+                        disabled
+                    >
+
+                </div>
+
+                {% else %}
+
+                <div class="col-md-4">
+
+                    <label
+                        for="ordenc_id"
+                        class="form-label"
+                    >
+                        Orden de compra
+                    </label>
+
+                    <select
+                        id="ordenc_id"
+                        name="ordenc_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione una orden de compra
+                        </option>
+
+                        {% for o in ordenes_pendientes %}
+                        <option
+                            value="{{ o.id_ordenc }}"
+                            {{ 'selected' if orden and orden.id_ordenc == o.id_ordenc }}
+                        >
+                            #{{ o.id_ordenc }} — {{ o.proveedor_empresa }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                </div>
+
 
                 <div class="col-md-4">
 
@@ -57,29 +156,6 @@ Nueva recepción | Manufactura
                 <div class="col-md-4">
 
                     <label
-                        for="ordenc_id"
-                        class="form-label"
-                    >
-                        Orden de compra
-                    </label>
-
-                    <select
-                        id="ordenc_id"
-                        name="ordenc_id"
-                        class="form-select"
-                        required
-                    >
-                        <option value="">
-                            Seleccione una orden de compra
-                        </option>
-                    </select>
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <label
                         for="almacen_id"
                         class="form-label"
                     >
@@ -95,9 +171,17 @@ Nueva recepción | Manufactura
                         <option value="">
                             Seleccione un almacén
                         </option>
+
+                        {% for alm in almacenes %}
+                        <option value="{{ alm.id_almacen }}">
+                            {{ alm.codigo }} — {{ alm.nombre }}
+                        </option>
+                        {% endfor %}
                     </select>
 
                 </div>
+
+                {% endif %}
 
             </div>
 
@@ -105,6 +189,23 @@ Nueva recepción | Manufactura
 
     </div>
 
+
+    {% if not recepcion and orden and not puede %}
+
+    <div class="alert alert-warning mb-4">
+        Esa orden de compra ya no está pendiente, así que no admite una nueva recepción.
+    </div>
+
+    {% elif not recepcion and not orden %}
+
+    <div class="alert alert-info mb-4">
+        Seleccione una orden de compra para cargar los productos que se van a recibir.
+    </div>
+
+    {% endif %}
+
+
+    {% if not recepcion and puede %}
 
     <div class="app-card mb-4">
 
@@ -163,42 +264,53 @@ Nueva recepción | Manufactura
 
                     <tbody id="receptionItemsTableBody">
 
+                        {# Una fila por cada producto de la orden, con la cantidad pedida #}
+                        {% for d in detalles_orden %}
+
                         <tr class="reception-item-row">
 
                             <td>
                                 <select
-                                    name="producto_id[]"
+                                    name="producto_id"
                                     class="form-select"
                                     required
                                 >
                                     <option value="">
                                         Seleccione un producto
                                     </option>
-                                </select>
-                            </td>
 
-
-                            <td>
-                                <select
-                                    name="lote_id[]"
-                                    class="form-select"
-                                    required
-                                >
-                                    <option value="">
-                                        Seleccione un lote
+                                    {% for p in detalles_orden|unique(attribute='producto_id') %}
+                                    <option
+                                        value="{{ p.producto_id }}"
+                                        {{ 'selected' if p.producto_id == d.producto_id }}
+                                    >
+                                        {{ p.producto_codigo }} — {{ p.producto_nombre }} ({{ p.producto_unidad_medida }})
                                     </option>
+                                    {% endfor %}
                                 </select>
                             </td>
 
 
                             <td>
                                 <input
+                                    type="text"
+                                    name="lote_codigo"
+                                    class="form-control"
+                                    placeholder="Ej. LOT-001"
+                                    required
+                                >
+                            </td>
+
+
+                            <td>
+                                <input
                                     type="number"
-                                    name="cantidad[]"
+                                    name="cantidad"
                                     class="form-control"
                                     min="0.01"
                                     step="0.01"
                                     placeholder="0.00"
+                                    value="{{ '%.2f'|format(d.cantidad) }}"
                                     required
                                 >
                             </td>
@@ -218,6 +330,8 @@ Nueva recepción | Manufactura
 
                         </tr>
 
+                        {% endfor %}
+
                     </tbody>
 
                 </table>
@@ -228,23 +342,27 @@ Nueva recepción | Manufactura
 
     </div>
 
+    {% endif %}
+
 
     <div class="d-flex justify-content-end gap-2 mb-4">
 
         <a
-            href="{{ url_for('compras.recepciones') }}"
+            href="{{ url_for('compras.recepcion_detalle', recepcion_id=recepcion.id_recepcion) if recepcion else url_for('compras.recepciones') }}"
             class="btn btn-light"
         >
             Cancelar
         </a>
 
+        {% if recepcion or puede %}
         <button
             type="submit"
             class="btn btn-primary"
         >
             <i class="bi bi-check-lg me-1"></i>
-            Guardar recepción
+            {{ 'Guardar cambios' if recepcion else 'Guardar recepción' }}
         </button>
+        {% endif %}
 
     </div>
 
@@ -255,8 +373,23 @@ Nueva recepción | Manufactura
 
 {% block scripts %}
 
+{% if not recepcion %}
+<script>
+    // Al cambiar la orden se recarga la pagina para cargar los productos de esa orden
+    document.getElementById("ordenc_id").addEventListener("change", function (e) {
+        const orden = e.target.value;
+
+        window.location.href = orden
+            ? window.location.pathname + "?orden_id=" + orden
+            : window.location.pathname;
+    });
+</script>
+{% endif %}
+
+{% if not recepcion and puede %}
 <script
     src="{{ url_for('static', filename='js/recepcion-form.js') }}">
 </script>
+{% endif %}
 
 {% endblock %}
