@@ -4,93 +4,90 @@
 Dashboard | Manufactura
 {% endblock %}
 
-
 {% block content %}
-
 <div class="page-header">
-
     <div>
-        <h1 class="page-title">
-            Dashboard
-        </h1>
-
-        <p class="page-description">
-            Resumen general del sistema de manufactura.
-        </p>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-description">Resumen general del sistema de manufactura.</p>
     </div>
-
 </div>
-
 
 <div class="row g-4">
-
     <div class="col-md-6 col-xl-3">
-
-        <div class="app-card p-4">
-
-            <div class="text-muted small mb-2">
-                Productos
-            </div>
-
-            <div class="fs-3 fw-semibold">
-                0
-            </div>
-
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Productos</div>
+            <div class="fs-3 fw-semibold">{{ resumen.productos }}</div>
         </div>
-
     </div>
-
-
     <div class="col-md-6 col-xl-3">
-
-        <div class="app-card p-4">
-
-            <div class="text-muted small mb-2">
-                Órdenes de producción
-            </div>
-
-            <div class="fs-3 fw-semibold">
-                0
-            </div>
-
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Órdenes de producción</div>
+            <div class="fs-3 fw-semibold">{{ resumen.ordenes_produccion }}</div>
         </div>
-
     </div>
-
-
     <div class="col-md-6 col-xl-3">
-
-        <div class="app-card p-4">
-
-            <div class="text-muted small mb-2">
-                Órdenes de compra
-            </div>
-
-            <div class="fs-3 fw-semibold">
-                0
-            </div>
-
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Órdenes de compra</div>
+            <div class="fs-3 fw-semibold">{{ resumen.ordenes_compra }}</div>
         </div>
-
     </div>
-
-
     <div class="col-md-6 col-xl-3">
-
-        <div class="app-card p-4">
-
-            <div class="text-muted small mb-2">
-                Órdenes de venta
-            </div>
-
-            <div class="fs-3 fw-semibold">
-                0
-            </div>
-
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Órdenes de venta</div>
+            <div class="fs-3 fw-semibold">{{ resumen.ordenes_venta }}</div>
         </div>
-
     </div>
-
 </div>
 
+<div class="mt-4 mb-3">
+    <h2 class="h5 mb-1">Indicadores operativos</h2>
+    <p class="text-muted small mb-0">Cálculos acumulados a partir de la información registrada en PostgreSQL.</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6 col-xl-4">
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Rendimiento de producción (Yield)</div>
+            <div class="fs-3 fw-semibold">
+                {% if kpis.yield_produccion is not none %}
+                    {{ '%.1f'|format(kpis.yield_produccion) }}%
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </div>
+            <p class="small text-muted mb-0 mt-2">Unidades aceptadas / (aceptadas + rechazadas).</p>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Órdenes de compra recibidas</div>
+            <div class="fs-3 fw-semibold">
+                {% if kpis.compras_recibidas is not none %}
+                    {{ '%.1f'|format(kpis.compras_recibidas) }}%
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </div>
+            <p class="small text-muted mb-0 mt-2">Órdenes recibidas / total de órdenes de compra.</p>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="app-card p-4 h-100">
+            <div class="text-muted small mb-2">Órdenes de venta despachadas</div>
+            <div class="fs-3 fw-semibold">
+                {% if kpis.ventas_despachadas is not none %}
+                    {{ '%.1f'|format(kpis.ventas_despachadas) }}%
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </div>
+            <p class="small text-muted mb-0 mt-2">Órdenes despachadas / total de órdenes de venta.</p>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small mt-3">
+    El símbolo «—» indica que aún no hay registros suficientes para calcular el porcentaje.
+    Los porcentajes de compras y ventas incluyen las órdenes canceladas en el total.
+</p>
 {% endblock %}
