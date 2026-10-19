@@ -9,7 +9,7 @@ La calidad aún no tiene endpoints de inspección / liberación en este proyecto
 Cualquier endpoint nuevo permanece bloqueado hasta registrar su política.
 """
 
-from flask import jsonify, request, session
+from flask import jsonify, redirect, request, session, url_for
 from modulos.seguridad import obtener_usuario_actual
 
 ADMIN = "administrador"
@@ -116,6 +116,11 @@ _asignar("""
 PUBLICOS = frozenset({"static", "auth.login", "auth.logout", "auth.me"})
 
 
+def _peticion_de_pagina():
+    """Solo navegación HTML del navegador; API/PowerShell siguen recibiendo JSON."""
+    return request.method in {"GET", "HEAD"} and "text/html" in request.headers.get("Accept", "").lower()
+
+
 def verificar_acceso():
     """Registrar una sola vez con app.before_request(verificar_acceso)."""
     endpoint = request.endpoint
@@ -136,11 +141,15 @@ def verificar_acceso():
         return jsonify(error="Método no autorizado para esta ruta."), 405
 
     if not session.get("id_usuario"):
+        if _peticion_de_pagina():
+            return redirect(url_for("auth.login"))
         return jsonify(error="Iniciá sesión para continuar."), 401
 
     usuario = obtener_usuario_actual()  # Consulta usuario, persona y rol activos en BD.
     if usuario is None:
         session.clear()
+        if _peticion_de_pagina():
+            return redirect(url_for("auth.login"))
         return jsonify(error="Cuenta inactiva, inexistente o sin rol válido."), 403
 
     if usuario["rol_codigo"] not in roles_permitidos:

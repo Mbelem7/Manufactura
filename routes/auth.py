@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from uuid import UUID
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from modulos.seguridad import obtener_usuario_actual
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -34,8 +34,16 @@ def _autenticar_en_supabase(correo, contrasena):
     return str(UUID(str(id_auth)))
 
 
-@auth_bp.post("/login")
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    # Página pública de acceso; el POST JSON original se conserva sin cambios.
+    if request.method == "GET":
+        if session.get("id_usuario"):
+            if obtener_usuario_actual() is not None:
+                return redirect(url_for("dashboard.index"))
+            session.clear()
+        return render_template("auth/login.html")
+
     if not request.is_json:
         return jsonify(error="Enviá JSON con email y password."), 415
     cuerpo = request.get_json(silent=True) or {}
