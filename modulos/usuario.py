@@ -393,3 +393,39 @@ def cambiar_estado_usuario_erp(id_usuario, estado):
     """), {"uid": str(id_usuario), "estado": estado}).scalar()
     db.session.commit()
     return resultado is not None
+
+
+def correo_usuario_erp_existe(correo):
+    """Detecta conflicto con PERSONA antes de crear una identidad Supabase Auth."""
+    return db.session.execute(text("""
+        SELECT EXISTS(
+            SELECT 1 FROM public.persona WHERE lower(correo) = lower(:correo)
+        )
+    """), {"correo": correo}).scalar()
+
+
+def registrar_nuevo_usuario_erp(uid, datos):
+    """Vincula el UUID creado por Auth en UNA transacción, solo como Operador."""
+    if datos.get("rol_codigo") != "operador":
+        raise ValueError("Solo se permite registrar Operadores.")
+    rol_id = _rol_id("operador")
+    if rol_id is None:
+        raise ValueError("No existe el rol Operador.")
+    try:
+        persona_id = db.session.execute(text("""
+            INSERT INTO public.persona
+                (nombre_1, nombre_2, apellido_1, apellido_2, correo, telefono, estado)
+            VALUES (:nombre_1, :nombre_2, :apellido_1, :apellido_2,
+                    :correo, :telefono, 'Activo')
+            RETURNING id_persona
+        """), {k: datos.get(k) for k in
+                 ("nombre_1", "nombre_2", "apellido_1", "apellido_2", "correo", "telefono")}).scalar_one()
+        db.session.execute(text("""
+            INSERT INTO public.usuario (id_usuario, persona_id, rol_id, estado)
+            VALUES (CAST(:uid AS uuid), :persona_id, :rol_id, 'Activo')
+        """), {"uid": str(uid), "persona_id": persona_id, "rol_id": rol_id})
+        db.session.commit()
+        return str(uid)
+    except Exception:
+        db.session.rollback()
+        raise

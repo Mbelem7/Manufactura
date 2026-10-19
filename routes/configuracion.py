@@ -1,12 +1,18 @@
-"""Administración backend de cuentas del ERP.
+"""Administración de usuarios del ERP: registro, edición y baja lógica.
 
-Las pantallas HTML actuales se mantienen sin cambios. Las API JSON son para el
-frontend y las pruebas. Crear la cuenta en Supabase Auth es, por ahora, un paso
-manual autorizado en Authentication > Users; aquí se vincula esa cuenta.
+Solo el Administrador accede a estas APIs. El nuevo rol asignable es Operador.
+Las contraseñas quedan exclusivamente en Supabase Auth.
 """
 
+import json
+import logging
+import os
 import re
 import secrets
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
+from uuid import UUID
 from hmac import compare_digest
 
 from flask import Blueprint, jsonify, render_template, request, session
@@ -17,6 +23,7 @@ from modulos.seguridad import requiere_roles
 
 configuracion_bp = Blueprint("configuracion", __name__, url_prefix="/configuracion")
 ROLES = frozenset({"administrador", "operador"})
+ROL_REGISTRABLE = "operador"
 NOMBRES_MAX = 100
 
 
@@ -56,7 +63,11 @@ def _limpiar_datos(datos, *, nuevo=False, actual=None):
         raise ValueError("El primer nombre y el primer apellido son obligatorios.")
     rol = datos.get("rol_codigo", (actual or {}).get("rol_codigo"))
     if rol not in ROLES:
-        raise ValueError("El rol debe ser administrador u operador.")
+        raise ValueError("Rol no válido.")
+    if nuevo and rol != "operador":
+        raise ValueError("Por ahora solamente se pueden registrar Operadores.")
+    if not nuevo and "rol_codigo" in datos and rol != (actual or {}).get("rol_codigo"):
+        raise ValueError("El rol de un usuario existente no se puede cambiar desde este formulario.")
     limpio["rol_codigo"] = rol
 
     if nuevo:
@@ -94,7 +105,9 @@ def csrf_api():
 @configuracion_bp.get("/api/roles")
 @requiere_roles("administrador")
 def roles_api():
-    return jsonify(roles=usuarios_db.listar_roles_erp())
+    # El Administrador existe; no se asigna a nuevos usuarios desde el ERP.
+    return jsonify(roles=[rol for rol in usuarios_db.listar_roles_erp()
+                          if rol["codigo"] == ROL_REGISTRABLE])
 
 
 @configuracion_bp.get("/api/usuarios")
@@ -116,28 +129,91 @@ def usuario_detalle_api(usuario_id):
     return jsonify(usuario=actual)
 
 
+def _supabase_admin_request(metodo, ruta, datos=None):
+    """Llamada exclusiva del servidor; nunca expone ni devuelve la clave secreta."""
+    url = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
+    llave = (os.getenv("SUPABASE_SECRET_KEY") or
+             os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    parsed = urlsplit(url)
+    if parsed.scheme != "https" or not parsed.netloc or not llave:
+        raise RuntimeError("Falta SUPABASE_SECRET_KEY en el servidor.")
+
+    headers = {"apikey": llave, "Content-Type": "application/json"}
+    if not llave.startswith("sb_secret_"):
+        # Compatibilidad con la llave antigua JWT service_role.
+        headers["Authorization"] = "Bearer " + llave
+    carga = json.dumps(datos).encode("utf-8") if datos is not None else None
+    peticion = Request(url + "/auth/v1/admin/users" + ruta,
+                       data=carga, headers=headers, method=metodo)
+    with urlopen(peticion, timeout=15) as respuesta:
+        contenido = respuesta.read()
+        return json.loads(contenido) if contenido else {}
+
+
+def _clave_registro(datos):
+    clave = datos.get("password")
+    if not isinstance(clave, str) or len(clave) < 10 or len(clave) > 128:
+        raise ValueError("La contraseña debe tener entre 10 y 128 caracteres.")
+    if not any(c.isalpha() for c in clave) or not any(c.isdigit() for c in clave):
+        raise ValueError("La contraseña debe incluir letras y números.")
+    return clave
+
+
 @configuracion_bp.post("/api/usuarios")
 @requiere_roles("administrador")
 def vincular_usuario_api():
+    """Registra una cuenta nueva en Auth y la vincula con PERSONA / USUARIO."""
     if not _requiere_csrf():
         return jsonify(error="Token CSRF inválido o ausente."), 403
     datos = _cuerpo_json()
     if datos is None:
         return jsonify(error="Enviá los datos como objeto JSON."), 400
     try:
-        limpio = _limpiar_datos(datos, nuevo=True)
-        uid = usuarios_db.vincular_usuario_auth_erp(limpio)
+        clave = _clave_registro(datos)
+        campos = {k: v for k, v in datos.items() if k != "password"}
+        limpio = _limpiar_datos(campos, nuevo=True)
+        if usuarios_db.correo_usuario_erp_existe(limpio["correo"]):
+            return jsonify(error="Ya existe una persona o usuario con ese correo."), 409
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
-    except IntegrityError:
-        from app import db
-        db.session.rollback()
-        return jsonify(error="Ya existe un registro relacionado con esta cuenta."), 409
     except SQLAlchemyError:
         from app import db
         db.session.rollback()
-        return jsonify(error="No se pudo vincular la cuenta. Revisá los permisos de consulta a Auth."), 503
-    return jsonify(mensaje="Cuenta de Auth vinculada al ERP.", id_usuario=uid), 201
+        return jsonify(error="No fue posible comprobar el correo en PostgreSQL."), 500
+
+    try:
+        creado = _supabase_admin_request("POST", "", {
+            "email": limpio["correo"], "password": clave,
+            # Para demostración con correos controlados por el equipo.
+            # En producción, usar invitación o confirmación de email.
+            "email_confirm": True,
+        })
+        uid = str(UUID(str((creado.get("user") or creado).get("id"))))
+    except RuntimeError:
+        return jsonify(error="Configurá SUPABASE_SECRET_KEY solo en el servidor para registrar cuentas."), 503
+    except HTTPError as exc:
+        if exc.code in (400, 409, 422):
+            return jsonify(error="Supabase rechazó el registro: correo existente o contraseña inválida."), 409
+        logging.exception("Supabase Auth rechazó alta de usuario (%s)", exc.code)
+        return jsonify(error="Supabase Auth no pudo crear la cuenta."), 502
+    except (URLError, TimeoutError):
+        return jsonify(error="No se pudo conectar con Supabase Auth."), 502
+    except (ValueError, TypeError, KeyError):
+        return jsonify(error="Supabase Auth devolvió una respuesta inesperada."), 502
+
+    try:
+        usuarios_db.registrar_nuevo_usuario_erp(uid, limpio)
+    except (IntegrityError, SQLAlchemyError, ValueError):
+        from app import db
+        db.session.rollback()
+        # Compensación: no dejar identidad en Auth sin registro en nuestro ERP.
+        try:
+            _supabase_admin_request("DELETE", "/" + uid)
+        except (HTTPError, URLError, TimeoutError, RuntimeError) as exc:
+            logging.error("ATENCIÓN: usuario %s quedó creado en Auth, pero no vinculado en ERP: %s", uid, type(exc).__name__)
+            return jsonify(error="Se creó en Auth pero falló la vinculación; revisá la cuenta en Supabase antes de reintentar."), 503
+        return jsonify(error="No se pudo guardar la cuenta en PostgreSQL. No se registró el usuario."), 409
+    return jsonify(mensaje="Usuario registrado correctamente.", id_usuario=uid), 201
 
 
 @configuracion_bp.post("/api/usuarios/<uuid:usuario_id>/actualizar")
