@@ -1,238 +1,171 @@
 {% extends "layouts/base.html" %}
-
-{% block title %}
-Nuevo usuario | Manufactura
-{% endblock %}
+{% block title %}Usuario | Manufactura{% endblock %}
 
 {% block content %}
-
 <div class="page-header">
-
     <div>
-        <h1 class="page-title">
-            Nuevo usuario
-        </h1>
-
-        <p class="page-description">
-            Registra una persona como usuario del sistema.
-        </p>
+        <h1 class="page-title" id="tituloFormulario">Nuevo usuario</h1>
+        <p class="page-description" id="subtituloFormulario">Registrá un nuevo Operador del ERP.</p>
     </div>
-
 </div>
 
+<div class="alert alert-danger d-none" id="errorFormulario" role="alert"></div>
+<div class="alert alert-success d-none" id="exitoFormulario" role="status"></div>
 
-<form method="POST">
-
+<form id="formUsuario" autocomplete="on">
     <div class="app-card mb-4">
-
         <div class="p-4">
-
-            <h5 class="mb-4">
-                Información personal
-            </h5>
-
-
+            <h5 class="mb-4">Información personal</h5>
             <div class="row g-3">
-
                 <div class="col-md-3">
-
-                    <label
-                        for="nombre_1"
-                        class="form-label"
-                    >
-                        Primer nombre
-                    </label>
-
-                    <input
-                        type="text"
-                        id="nombre_1"
-                        name="nombre_1"
-                        class="form-control"
-                        required
-                    >
-
+                    <label class="form-label" for="nombre_1">Primer nombre *</label>
+                    <input class="form-control" name="nombre_1" id="nombre_1" maxlength="100" required autocomplete="given-name">
                 </div>
-
-
                 <div class="col-md-3">
-
-                    <label
-                        for="nombre_2"
-                        class="form-label"
-                    >
-                        Segundo nombre
-                    </label>
-
-                    <input
-                        type="text"
-                        id="nombre_2"
-                        name="nombre_2"
-                        class="form-control"
-                    >
-
+                    <label class="form-label" for="nombre_2">Segundo nombre</label>
+                    <input class="form-control" name="nombre_2" id="nombre_2" maxlength="100">
                 </div>
-
-
                 <div class="col-md-3">
-
-                    <label
-                        for="apellido_1"
-                        class="form-label"
-                    >
-                        Primer apellido
-                    </label>
-
-                    <input
-                        type="text"
-                        id="apellido_1"
-                        name="apellido_1"
-                        class="form-control"
-                        required
-                    >
-
+                    <label class="form-label" for="apellido_1">Primer apellido *</label>
+                    <input class="form-control" name="apellido_1" id="apellido_1" maxlength="100" required autocomplete="family-name">
                 </div>
-
-
                 <div class="col-md-3">
-
-                    <label
-                        for="apellido_2"
-                        class="form-label"
-                    >
-                        Segundo apellido
-                    </label>
-
-                    <input
-                        type="text"
-                        id="apellido_2"
-                        name="apellido_2"
-                        class="form-control"
-                    >
-
+                    <label class="form-label" for="apellido_2">Segundo apellido</label>
+                    <input class="form-control" name="apellido_2" id="apellido_2" maxlength="100">
                 </div>
-
-
                 <div class="col-md-5">
-
-                    <label
-                        for="correo"
-                        class="form-label"
-                    >
-                        Correo
-                    </label>
-
-                    <input
-                        type="email"
-                        id="correo"
-                        name="correo"
-                        class="form-control"
-                    >
-
+                    <label class="form-label" for="correo">Correo electrónico *</label>
+                    <input class="form-control" type="email" name="correo" id="correo" maxlength="255" required autocomplete="email">
+                    <div class="form-text d-none" id="notaCorreo">El correo no puede modificarse desde esta pantalla.</div>
                 </div>
-
-
                 <div class="col-md-4">
-
-                    <label
-                        for="telefono"
-                        class="form-label"
-                    >
-                        Teléfono
-                    </label>
-
-                    <input
-                        type="tel"
-                        id="telefono"
-                        name="telefono"
-                        class="form-control"
-                    >
-
+                    <label class="form-label" for="telefono">Teléfono</label>
+                    <input class="form-control" type="tel" name="telefono" id="telefono" maxlength="20" autocomplete="tel">
                 </div>
-
-
-                <div class="col-md-3">
-
-                    <label
-                        for="persona_estado"
-                        class="form-label"
-                    >
-                        Estado de la persona
-                    </label>
-
-                    <input
-                        type="text"
-                        id="persona_estado"
-                        name="persona_estado"
-                        class="form-control"
-                        placeholder="Estado"
-                        required
-                    >
-
-                </div>
-
             </div>
-
         </div>
-
     </div>
-
 
     <div class="app-card mb-4">
-
         <div class="p-4">
-
-            <h5 class="mb-4">
-                Información del usuario
-            </h5>
-
+            <h5 class="mb-4">Acceso al sistema</h5>
             <div class="row g-3">
-
-                <div class="col-md-4">
-
-                    <label
-                        for="estado"
-                        class="form-label"
-                    >
-                        Estado
-                    </label>
-
-                    <input
-                        type="text"
-                        id="estado"
-                        name="estado"
-                        class="form-control"
-                        placeholder="Estado"
-                        required
-                    >
-
+                <div class="col-md-5">
+                    <label class="form-label" for="rol_codigo">Rol</label>
+                    <select class="form-select" id="rol_codigo" name="rol_codigo">
+                        <option value="operador" selected>Operador</option>
+                        <option value="administrador" hidden>Administrador (existente)</option>
+                        <option value="proximamente" disabled>Otros roles — Próximamente</option>
+                    </select>
+                    <div class="form-text">Por ahora, los usuarios nuevos se registran como Operador.</div>
                 </div>
-
+                <div class="col-md-5" id="grupoContrasena">
+                    <label class="form-label" for="password">Contraseña temporal *</label>
+                    <input class="form-control" type="password" id="password" name="password"
+                           minlength="10" maxlength="128" required autocomplete="new-password">
+                    <div class="form-text">Entre 10 y 128 caracteres, con letras y números. Entregala al usuario por un canal seguro.</div>
+                </div>
             </div>
-
         </div>
-
     </div>
-
 
     <div class="d-flex justify-content-end gap-2 mb-4">
-
-        <a
-            href="{{ url_for('configuracion.usuarios') }}"
-            class="btn btn-light"
-        >
-            Cancelar
-        </a>
-
-        <button
-            type="submit"
-            class="btn btn-primary"
-        >
-            <i class="bi bi-check-lg me-1"></i>
-            Guardar usuario
+        <a class="btn btn-light" href="{{ url_for('configuracion.usuarios') }}">Cancelar</a>
+        <button class="btn btn-primary" id="guardarUsuario" type="submit">
+            <i class="bi bi-check-lg me-1"></i> Guardar usuario
         </button>
-
     </div>
-
 </form>
+{% endblock %}
 
+{% block scripts %}
+<script>
+(() => {
+    "use strict";
+    const form = document.getElementById("formUsuario");
+    const error = document.getElementById("errorFormulario");
+    const exito = document.getElementById("exitoFormulario");
+    const guardar = document.getElementById("guardarUsuario");
+    const id = new URLSearchParams(window.location.search).get("editar");
+    const baseApi = {{ url_for('configuracion.usuarios_api')|tojson }};
+    const urlLista = {{ url_for('configuracion.usuarios')|tojson }};
+    const urlCsrf = {{ url_for('configuracion.csrf_api')|tojson }};
+    const campos = ["nombre_1", "nombre_2", "apellido_1", "apellido_2", "telefono"];
+    let token = "";
+    let rolActual = "operador";
+
+    function mensaje(elemento, texto) {
+        elemento.textContent = texto;
+        elemento.classList.remove("d-none");
+        if (elemento === error) exito.classList.add("d-none");
+        if (elemento === exito) error.classList.add("d-none");
+    }
+
+    async function api(url, opciones = {}) {
+        const res = await fetch(url, {
+            credentials: "same-origin",
+            headers: { "Accept": "application/json", ...(opciones.headers || {}) },
+            ...opciones
+        });
+        const resultado = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(resultado.error || `No se pudo completar la operación (HTTP ${res.status}).`);
+        return resultado;
+    }
+
+    async function preparar() {
+        try {
+            const csrf = await api(urlCsrf);
+            token = csrf.csrf_token;
+            if (!id) return;
+            document.getElementById("tituloFormulario").textContent = "Editar usuario";
+            document.getElementById("subtituloFormulario").textContent = "Modificá los datos personales del usuario registrado.";
+            document.getElementById("grupoContrasena").classList.add("d-none");
+            document.getElementById("password").required = false;
+            const correo = document.getElementById("correo");
+            correo.readOnly = true;
+            document.getElementById("notaCorreo").classList.remove("d-none");
+            const selectRol = document.getElementById("rol_codigo");
+            selectRol.disabled = true;
+            const { usuario } = await api(`${baseApi}/${encodeURIComponent(id)}`);
+            if (!usuario) throw new Error("No se encontró el usuario.");
+            for (const campo of campos) form.elements[campo].value = usuario[campo] || "";
+            correo.value = usuario.correo || "";
+            rolActual = usuario.rol_codigo;
+            selectRol.value = rolActual;
+            guardar.innerHTML = '<i class="bi bi-check-lg me-1"></i> Guardar cambios';
+        } catch (err) {
+            mensaje(error, err.message);
+            guardar.disabled = true;
+        }
+    }
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        error.classList.add("d-none");
+        exito.classList.add("d-none");
+        if (!token) return mensaje(error, "No se pudo verificar la sesión administrativa. Actualizá la página.");
+        const datos = Object.fromEntries(campos.map(c => [c, form.elements[c].value.trim()]));
+        if (!id) {
+            datos.correo = form.elements.correo.value.trim();
+            datos.password = form.elements.password.value;
+            datos.rol_codigo = "operador";
+        }
+        guardar.disabled = true;
+        try {
+            await api(id ? `${baseApi}/${encodeURIComponent(id)}/actualizar` : baseApi, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRF-Token": token, "Accept": "application/json" },
+                body: JSON.stringify(datos)
+            });
+            mensaje(exito, id ? "Usuario actualizado correctamente." : "Usuario registrado correctamente.");
+            form.elements.password.value = "";
+            setTimeout(() => window.location.assign(urlLista), 700);
+        } catch (err) {
+            mensaje(error, err.message);
+            guardar.disabled = false;
+        }
+    });
+    preparar();
+})();
+</script>
 {% endblock %}

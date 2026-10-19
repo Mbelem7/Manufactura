@@ -13,12 +13,9 @@ Usuarios | Manufactura
         </p>
     </div>
 
-    {# Crear identidades en Supabase Auth aún no está integrado en el ERP. #}
-    <button type="button" class="btn btn-primary" disabled
-            title="La creación de usuarios desde el ERP aún no está habilitada">
-        <i class="bi bi-plus-lg me-1"></i>
-        Nuevo usuario
-    </button>
+    <a class="btn btn-primary" href="{{ url_for('configuracion.usuario_nuevo') }}">
+        <i class="bi bi-plus-lg me-1"></i> Nuevo usuario
+    </a>
 </div>
 
 <div class="app-card">
@@ -48,11 +45,12 @@ Usuarios | Manufactura
                     <th>Rol</th>
                     <th>Estado</th>
                     <th>Fecha de creación</th>
+                    <th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaUsuarios">
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="8" class="text-center py-5 text-muted">
                         Cargando usuarios...
                     </td>
                 </tr>
@@ -70,12 +68,17 @@ Usuarios | Manufactura
     const tabla = document.getElementById("tablaUsuarios");
     const buscador = document.getElementById("buscarUsuarios");
     let usuarios = [];
+    let usuarioActualId = null;
+    let csrfToken = "";
+    const apiBase = {{ url_for('configuracion.usuarios_api')|tojson }};
+    const urlFormulario = {{ url_for('configuracion.usuario_nuevo')|tojson }};
+    const csrfUrl = {{ url_for('configuracion.csrf_api')|tojson }};
 
     function mostrarMensaje(mensaje) {
         tabla.replaceChildren();
         const fila = document.createElement("tr");
         const celda = document.createElement("td");
-        celda.colSpan = 7;
+        celda.colSpan = 8;
         celda.className = "text-center py-5 text-muted";
         celda.textContent = mensaje;
         fila.appendChild(celda);
@@ -142,14 +145,58 @@ Usuarios | Manufactura
             fila.appendChild(estadoCelda);
 
             agregarCelda(fila, fechaLegible(usuario.fecha_creacion));
+
+            const acciones = document.createElement("td");
+            acciones.className = "text-end text-nowrap";
+            const editar = document.createElement("a");
+            editar.className = "btn btn-sm btn-outline-primary me-2";
+            editar.textContent = "Editar";
+            editar.href = `${urlFormulario}?editar=${encodeURIComponent(id)}`;
+            acciones.appendChild(editar);
+
+            const cambiar = document.createElement("button");
+            cambiar.type = "button";
+            cambiar.className = "btn btn-sm btn-outline-secondary";
+            cambiar.textContent = activo ? "Desactivar" : "Activar";
+            cambiar.disabled = id === usuarioActualId;
+            if (cambiar.disabled) cambiar.title = "No podés desactivar tu propia cuenta";
+            cambiar.addEventListener("click", () => cambiarEstado(usuario, cambiar));
+            acciones.appendChild(cambiar);
+            fila.appendChild(acciones);
             fragmento.appendChild(fila);
         }
         tabla.replaceChildren(fragmento);
     }
 
+    async function cambiarEstado(usuario, boton) {
+        const activo = String(usuario.estado || "").toLowerCase() === "activo";
+        const siguiente = activo ? "Inactivo" : "Activo";
+        if (!window.confirm(`¿${activo ? "Desactivar" : "Activar"} a ${nombreCompleto(usuario)}?`)) return;
+        boton.disabled = true;
+        try {
+            if (!csrfToken) {
+                const csrfRes = await fetch(csrfUrl, { credentials: "same-origin" });
+                if (!csrfRes.ok) throw new Error("No se pudo verificar la sesión.");
+                csrfToken = (await csrfRes.json()).csrf_token;
+            }
+            const respuesta = await fetch(`${apiBase}/${encodeURIComponent(usuario.id_usuario)}/estado`, {
+                method: "POST", credentials: "same-origin",
+                headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+                body: JSON.stringify({ estado: siguiente })
+            });
+            const datos = await respuesta.json().catch(() => ({}));
+            if (!respuesta.ok) throw new Error(datos.error || `HTTP ${respuesta.status}`);
+            usuario.estado = datos.estado || siguiente;
+            renderizar();
+        } catch (err) {
+            window.alert(err.message || "No se pudo cambiar el estado.");
+            boton.disabled = false;
+        }
+    }
+
     async function cargarUsuarios() {
         try {
-            const respuesta = await fetch("{{ url_for('configuracion.usuarios_api') }}", {
+            const respuesta = await fetch(apiBase, {
                 method: "GET",
                 credentials: "same-origin",
                 headers: { "Accept": "application/json" }
@@ -165,6 +212,10 @@ Usuarios | Manufactura
             }
 
             usuarios = datos.usuarios;
+            try {
+                const me = await fetch("/auth/me", { credentials: "same-origin" });
+                if (me.ok) usuarioActualId = (await me.json()).id_usuario;
+            } catch (_) { /* si no responde, el backend protege el cambio */ }
             renderizar();
         } catch (error) {
             console.error("No se pudieron cargar los usuarios:", error);
