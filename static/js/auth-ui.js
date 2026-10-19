@@ -21,7 +21,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         if (response.ok) {
             const user = await response.json();
-            if (name) name.textContent = `${user.nombre || "Usuario"} ${user.apellido || ""}`.trim();
+            if (name) {
+                name.textContent = `${user.nombre || "Usuario"} ${user.apellido || ""}`.trim();
+                name.style.visibility = "visible";
+            }
             if (email) email.textContent = user.correo || "Cuenta activa";
             if (role) role.textContent = user.rol === "administrador" ? "Administrador" : "Operador";
             if (adminNav && user.rol === "administrador") adminNav.classList.remove("d-none");
