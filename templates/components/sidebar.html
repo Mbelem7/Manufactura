@@ -26,6 +26,61 @@
         </a>
 
 
+        <!-- TABLEROS -->
+
+        <div class="sidebar-section-title">
+            Tableros
+        </div>
+
+
+        <a
+            href="{{ url_for('tableros.produccion_rubro') }}"
+            class="sidebar-link
+            {% if request.endpoint == 'tableros.produccion_rubro' %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-bar-chart-line"></i>
+            <span>Producción</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('tableros.ventas_rubro') }}"
+            class="sidebar-link
+            {% if request.endpoint == 'tableros.ventas_rubro' %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Ventas</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('tableros.compras_rubro') }}"
+            class="sidebar-link
+            {% if request.endpoint == 'tableros.compras_rubro' %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-bag"></i>
+            <span>Compras</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('tableros.inventario_rubro') }}"
+            class="sidebar-link
+            {% if request.endpoint == 'tableros.inventario_rubro' %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-archive"></i>
+            <span>Inventario</span>
+        </a>
+
+
         <!-- INVENTARIO -->
 
         <div class="sidebar-section-title">
@@ -164,13 +219,78 @@
             class="sidebar-link
             {% if request.endpoint in [
                 'produccion.ejecuciones',
-                'produccion.ejecucion_nueva'
+                'produccion.ejecucion_nueva',
+                'planta.operaciones',
+                'planta.spc_operacion'
             ] %}
                 active
             {% endif %}"
         >
             <i class="bi bi-play-circle"></i>
             <span>Ejecuciones</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('calidad.controles') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'calidad.controles',
+                'calidad.control_nuevo',
+                'calidad.control_detalle'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-patch-check"></i>
+            <span>Control de calidad</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('planta.oee_resumen') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'planta.oee_resumen',
+                'planta.oee_detalle'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-speedometer2"></i>
+            <span>OEE</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('sostenibilidad.resumen') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'sostenibilidad.resumen',
+                'sostenibilidad.detalle',
+                'sostenibilidad.parametros'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-leaf"></i>
+            <span>Sostenibilidad</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('sensores.index') }}"
+            class="sidebar-link
+            {% if request.endpoint in [
+                'sensores.index',
+                'sensores.detalle',
+                'sensores.modelo'
+            ] %}
+                active
+            {% endif %}"
+        >
+            <i class="bi bi-cpu"></i>
+            <span>Sensores</span>
         </a>
 
 

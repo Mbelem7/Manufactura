@@ -1,0 +1,55 @@
+{% extends "layouts/base.html" %}
+{% from "tableros/_macros.html" import kpi, grafico, filtro, pct %}
+
+{% block title %}
+Tablero de producción | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Tablero de producción
+        </h1>
+
+        <p class="page-description">
+            Órdenes, unidades producidas, eficiencia de la línea (OEE), paradas y calidad.
+        </p>
+    </div>
+
+</div>
+
+{{ filtro(inicio, fin) }}
+
+<div class="row g-3 mb-4">
+
+    {{ kpi('Órdenes de producción', kpis.ordenes) }}
+    {{ kpi('Unidades aceptadas', "{:,.0f}".format(kpis.aceptadas)) }}
+    {{ kpi('Unidades rechazadas', "{:,.0f}".format(kpis.rechazadas), 'Scrap de la línea', 'danger' if kpis.rechazadas else none) }}
+    {{ kpi('Rendimiento (yield)', pct(kpis.rendimiento)) }}
+
+    {{ kpi('OEE promedio', pct(kpis.oee), kpis.ejecuciones_oee ~ ' ejecuciones terminadas') }}
+    {{ kpi('Controles de calidad', kpis.controles, kpis.no_conformes ~ ' no conformes', 'danger' if kpis.no_conformes else none) }}
+    {{ kpi('Alertas SPC', kpis.alertas) }}
+
+</div>
+
+<div class="row g-4">
+
+    {{ grafico('grafOrdenes', 'Órdenes por estado') }}
+    {{ grafico('grafDias', 'Producción por día', 'Unidades aceptadas y rechazadas al terminar cada ejecución.') }}
+    {{ grafico('grafOee', 'Indicadores del OEE', 'Promedio de las ejecuciones terminadas. Referencia: 85 % o más.') }}
+    {{ grafico('grafParadas', 'Paradas por tipo', 'Minutos simulados perdidos (Pareto).') }}
+    {{ grafico('grafCalidad', 'Resultado de los controles de calidad') }}
+    {{ grafico('grafDisposicion', 'Disposición de los lotes revisados', 'Liberación, retrabajo, scrap o pendiente de decidir.') }}
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{% include "tableros/_graficos.html" %}
+{% endblock %}

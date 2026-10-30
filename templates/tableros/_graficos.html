@@ -1,0 +1,71 @@
+{# Dibuja todas las graficas del tablero a partir de la lista "graficos" que arma la ruta #}
+<div id="datosTablero" data-datos='{{ graficos|tojson }}' hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const GRAFICOS = JSON.parse(document.getElementById("datosTablero").dataset.datos);
+
+        // Alto de cada grafica (se aplica aqui para no escribir Jinja dentro de un style)
+        document.querySelectorAll("[data-alto]").forEach(function (contenedor) {
+            contenedor.style.height = contenedor.dataset.alto + "px";
+        });
+
+        const PALETA = ["#0d6efd", "#198754", "#fd7e14", "#6f42c1", "#dc3545", "#20c997", "#ffc107", "#6c757d"];
+
+        GRAFICOS.forEach(function (g) {
+            const lienzo = document.getElementById(g.id);
+
+            if (!lienzo) {
+                return;
+            }
+
+            // Sin datos: se avisa en lugar de dibujar una grafica vacia
+            if (g.etiquetas.length === 0) {
+                lienzo.parentElement.innerHTML =
+                    '<div class="text-center text-muted py-5">Sin datos en el período.</div>';
+                return;
+            }
+
+            const circular = g.tipo === "doughnut" || g.tipo === "pie";
+
+            const datasets = g.series.map(function (serie, i) {
+                return {
+                    label: serie.nombre,
+                    data: serie.valores,
+                    backgroundColor: circular ? PALETA.slice(0, g.etiquetas.length) : (serie.color || PALETA[i % PALETA.length]),
+                    borderColor: circular ? "#ffffff" : (serie.color || PALETA[i % PALETA.length]),
+                    borderWidth: circular ? 2 : 1
+                };
+            });
+
+            const opciones = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: circular || g.series.length > 1,
+                        position: "bottom"
+                    }
+                }
+            };
+
+            if (!circular) {
+                opciones.indexAxis = g.horizontal ? "y" : "x";
+
+                const eje = g.eje ? { title: { display: true, text: g.eje } } : {};
+                const valores = Object.assign({ beginAtZero: true, stacked: g.apilado }, eje);
+                const categorias = { stacked: g.apilado };
+
+                opciones.scales = g.horizontal
+                    ? { x: valores, y: categorias }
+                    : { x: categorias, y: valores };
+            }
+
+            new Chart(lienzo, {
+                type: g.tipo,
+                data: { labels: g.etiquetas, datasets: datasets },
+                options: opciones
+            });
+        });
+    })();
+</script>

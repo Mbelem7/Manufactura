@@ -5,7 +5,8 @@ Roles habilitados:
 - operador: acceso a operaciones de inventario, producción, compras, ventas y reportes,
   pero NO a la administración de usuarios o configuración.
 
-La calidad aún no tiene endpoints de inspección / liberación en este proyecto.
+La calidad (inspección y disposición de lotes) y la planta (operaciones de la ruta y
+sensor simulado) se rigen por las políticas de abajo.
 Cualquier endpoint nuevo permanece bloqueado hasta registrar su política.
 """
 
@@ -79,6 +80,38 @@ _asignar("""
     produccion.centro_trabajo_baja produccion.ruta_baja
     produccion.orden_baja produccion.ejecucion_terminar
 """, escribir=AMBOS)
+
+# Calidad: revisión de lotes (operación OP-040). Cualquier rol puede registrar una
+# revisión, pero la disposición de un lote no conforme (liberación con concesión,
+# retrabajo o scrap) la decide solo el administrador. Para que también la decida el
+# operador, cambiar SOLO_ADMIN por AMBOS en la última línea de este bloque.
+_asignar("calidad.controles calidad.control_detalle", leer=AMBOS)
+_asignar("calidad.control_nuevo", leer=AMBOS, escribir=AMBOS)
+_asignar("calidad.control_disposicion", escribir=SOLO_ADMIN)
+
+# Planta (MES): operaciones de la ruta, paradas, sensor simulado, carta de control (SPC) y OEE.
+_asignar("planta.operaciones planta.spc_operacion planta.lecturas_json planta.oee_resumen planta.oee_detalle", leer=AMBOS)
+_asignar("planta.operacion_iniciar planta.operacion_terminar planta.parada_iniciar planta.parada_reanudar", escribir=AMBOS)
+
+# Sensores: calibración, diagnóstico con árbol de decisión y modelo. Cualquier rol consulta y
+# registra calibraciones.
+_asignar("sensores.index sensores.detalle sensores.modelo sensores.diagnostico_json", leer=AMBOS)
+_asignar("sensores.calibrar", escribir=AMBOS)
+
+# Sostenibilidad: energía, intensidad energética y huella de carbono. Cualquier rol consulta y
+# completa los datos de cada equipo, producto y despacho; solo el administrador registra los
+# factores de emisión, porque deben citar su fuente.
+_asignar("sostenibilidad.resumen sostenibilidad.detalle sostenibilidad.parametros", leer=AMBOS)
+_asignar("""
+    sostenibilidad.centro_potencia sostenibilidad.producto_peso sostenibilidad.despacho_transporte
+""", escribir=AMBOS)
+_asignar("sostenibilidad.factor_nuevo", escribir=SOLO_ADMIN)
+
+# Tableros por rubro (producción, ventas, compras e inventario): solo consulta.
+_asignar("""
+    tableros.produccion_rubro tableros.ventas_rubro
+    tableros.compras_rubro tableros.inventario_rubro
+""", leer=AMBOS)
 
 # Compras: proveedores, órdenes y recepciones.
 _asignar("""

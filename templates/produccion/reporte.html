@@ -1,0 +1,313 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Reporte de producción | Manufactura
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        aside, nav, .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set colores = {'pendiente': 'warning', 'en_proceso': 'primary', 'finalizada': 'success', 'cancelada': 'secondary'} %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Reporte de producción
+        </h1>
+
+        <p class="page-description">
+            {% if inicio and fin %}
+                Órdenes de producción del {{ inicio }} al {{ fin }}: cantidad planeada contra lo producido.
+            {% else %}
+                Órdenes de producción de un período: cantidad planeada contra lo producido.
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="d-flex gap-2 no-print">
+
+        <a
+            href="{{ url_for('produccion.ordenes') }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-arrow-left me-1"></i>
+            Volver
+        </a>
+
+        {% if inicio and fin %}
+        <button
+            type="button"
+            class="btn btn-primary"
+            onclick="window.print()"
+        >
+            <i class="bi bi-printer me-1"></i>
+            Imprimir
+        </button>
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4 no-print">
+
+    <div class="p-3">
+
+        <form
+            method="GET"
+            class="row g-3 align-items-end"
+        >
+
+            <div class="col-md-4">
+
+                <label
+                    for="inicio"
+                    class="form-label"
+                >
+                    Desde
+                </label>
+
+                <input
+                    type="date"
+                    id="inicio"
+                    name="inicio"
+                    class="form-control"
+                    value="{{ inicio or '' }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <label
+                    for="fin"
+                    class="form-label"
+                >
+                    Hasta
+                </label>
+
+                <input
+                    type="date"
+                    id="fin"
+                    name="fin"
+                    class="form-control"
+                    value="{{ fin or '' }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4 d-grid">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    <i class="bi bi-file-earmark-text me-1"></i>
+                    Generar reporte
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+{% if not inicio or not fin %}
+
+<div class="alert alert-info">
+    Elija un período para generar el reporte.
+</div>
+
+{% else %}
+
+{% set aceptadas = reporte|sum(attribute='cantidad_aceptada') %}
+{% set rechazadas = reporte|sum(attribute='cantidad_rechazada') %}
+{% set producidas = aceptadas + rechazadas %}
+
+<div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">
+                    Órdenes en el período
+                </div>
+
+                <div class="fw-semibold fs-4">
+                    {{ reporte|length }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="col-md-3">
+
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">
+                    Unidades aceptadas
+                </div>
+
+                <div class="fw-semibold fs-4">
+                    {{ "{:,.0f}".format(aceptadas) }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="col-md-3">
+
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">
+                    Unidades rechazadas
+                </div>
+
+                <div class="fw-semibold fs-4">
+                    {{ "{:,.0f}".format(rechazadas) }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="col-md-3">
+
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">
+                    Rendimiento (yield)
+                </div>
+
+                <div class="fw-semibold fs-4">
+                    {{ "{:.1f} %".format(aceptadas / producidas * 100) if producidas else '—' }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Orden</th>
+                    <th>Producto</th>
+                    <th>Estado</th>
+                    <th>Fecha de creación</th>
+                    <th class="text-end">Planeada</th>
+                    <th class="text-end">Aceptada</th>
+                    <th class="text-end">Rechazada</th>
+                    <th class="text-end">Rendimiento</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for r in reporte %}
+
+                {% set hechas = r.cantidad_aceptada + r.cantidad_rechazada %}
+
+                <tr>
+
+                    <td>
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=r.id_ordenp) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            #{{ r.id_ordenp }}
+                        </a>
+                    </td>
+
+                    <td>{{ r.producto_codigo }} — {{ r.producto_nombre }}</td>
+
+                    <td>
+                        <span class="badge text-bg-{{ colores.get(r.estado, 'secondary') }}">
+                            {{ r.estado|replace('_', ' ')|capitalize }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ r.fecha_creacion.strftime('%d/%m/%Y %H:%M') if r.fecha_creacion }}
+                    </td>
+
+                    <td class="text-end">
+                        {{ "{:,.2f}".format(r.cantidad) }}
+                    </td>
+
+                    <td class="text-end">
+                        {{ "{:,.0f}".format(r.cantidad_aceptada) }}
+                    </td>
+
+                    <td class="text-end">
+                        {{ "{:,.0f}".format(r.cantidad_rechazada) }}
+                    </td>
+
+                    <td class="text-end">
+                        {{ "{:.1f} %".format(r.cantidad_aceptada / hechas * 100) if hechas else '—' }}
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="8">
+
+                        <div class="text-center py-4 text-muted">
+                            No hay órdenes de producción en este período.
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<p class="text-muted small mt-3">
+    El rendimiento es unidades aceptadas entre aceptadas más rechazadas. Se muestra — mientras la orden no tenga ejecuciones terminadas.
+</p>
+
+{% endif %}
+
+{% endblock %}

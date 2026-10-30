@@ -1,0 +1,448 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Operaciones de la ejecución | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{% set colores = {'pendiente': 'secondary', 'en_curso': 'primary', 'terminada': 'success'} %}
+{% set nombres = {'pendiente': 'Pendiente', 'en_curso': 'En curso', 'terminada': 'Terminada'} %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Operaciones de la ejecución #{{ produccion.id_produccion }}
+        </h1>
+
+        <p class="page-description">
+            Orden de producción #{{ orden.id_ordenp }} — {{ orden.producto_codigo }} {{ orden.producto_nombre }}
+            · lote {{ orden.lote_codigo or '—' }}
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <a
+            href="{{ url_for('planta.oee_detalle', produccion_id=produccion.id_produccion) }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-speedometer2 me-1"></i>
+            Ver OEE
+        </a>
+
+        <a
+            href="{{ url_for('calidad.control_nuevo', orden_id=orden.id_ordenp) }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-clipboard-check me-1"></i>
+            Control de calidad
+        </a>
+
+        <a
+            href="{{ url_for('produccion.ejecuciones') }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-arrow-left me-1"></i>
+            Volver
+        </a>
+
+    </div>
+
+</div>
+
+
+{% if abierta %}
+
+<div class="alert alert-warning d-flex justify-content-between align-items-center">
+
+    <div>
+        <strong>Línea detenida</strong>
+        desde las {{ abierta.fecha_inicio.strftime('%H:%M:%S') }}:
+        {{ tipos_parada.get(abierta.tipo, abierta.tipo) }}{{ ' — ' ~ abierta.motivo if abierta.motivo }}.
+        El reloj de la operación está en pausa.
+    </div>
+
+    <form
+        method="POST"
+        action="{{ url_for('planta.parada_reanudar', produccion_id=produccion.id_produccion, parada_id=abierta.id_parada) }}"
+    >
+        <button
+            type="submit"
+            class="btn btn-sm btn-warning text-nowrap"
+        >
+            <i class="bi bi-play-fill me-1"></i>
+            Reanudar
+        </button>
+    </form>
+
+</div>
+
+{% endif %}
+
+
+<div class="alert alert-info">
+    Cada operación se puede terminar solo cuando cumple su tiempo estándar. Para la demostración
+    se acelera el reloj con un <strong>factor</strong>: con factor 60, un minuto real equivale a
+    60 minutos simulados. El valor sugerido hace que cada operación dure alrededor de un minuto real.
+    Una parada de la línea detiene el reloj de la operación.
+</div>
+
+
+<div class="app-card">
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Sec.</th>
+                    <th>Operación</th>
+                    <th>Centro de trabajo</th>
+                    <th>Tiempo estándar</th>
+                    <th style="min-width: 190px;">Avance</th>
+                    <th>Estado</th>
+
+                    <th class="text-end">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in filas %}
+
+                <tr>
+
+                    <td>{{ f.ruta.secuencia }}</td>
+
+                    <td class="fw-semibold">{{ f.ruta.codigo }}</td>
+
+                    <td>
+                        {{ f.ruta.centro_trabajo_codigo }} — {{ f.ruta.centro_trabajo_nombre }}
+                        {% if f.tiene_sensor %}
+                        <span class="badge text-bg-light ms-1">
+                            <i class="bi bi-thermometer-half"></i> sensor
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ "{:,.0f}".format(f.estandar) }} min</td>
+
+                    <td>
+
+                        {% if f.ejecucion %}
+
+                        <div class="progress mb-1" style="height: 8px;">
+                            <div
+                                class="progress-bar {{ 'bg-success' if f.estado == 'terminada' else ('bg-warning' if f.detenida else '') }}"
+                                role="progressbar"
+                                data-progreso="{{ '%.0f'|format(f.progreso) }}"
+                            ></div>
+                        </div>
+
+                        <div class="small text-muted">
+                            {{ "{:,.1f}".format([f.transcurrido, f.estandar]|min) }} / {{ "{:,.0f}".format(f.estandar) }} min simulados
+                            · ×{{ "{:,.0f}".format(f.ejecucion.factor_aceleracion) }}
+                        </div>
+
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {% if f.detenida %}
+                        <span class="badge text-bg-warning">Detenida</span>
+                        {% else %}
+                        <span class="badge text-bg-{{ colores[f.estado] }}">
+                            {{ nombres[f.estado] }}
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        {% if f.puede_iniciar %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('planta.operacion_iniciar', produccion_id=produccion.id_produccion, ruta_id=f.ruta.id_ruta) }}"
+                            class="d-flex gap-2 justify-content-end align-items-center"
+                        >
+                            <input
+                                type="number"
+                                name="factor"
+                                class="form-control form-control-sm"
+                                style="width: 90px;"
+                                min="1"
+                                max="100000"
+                                step="1"
+                                value="{{ f.factor_sugerido }}"
+                                title="Factor de aceleración del reloj"
+                                required
+                            >
+
+                            {% if f.tiene_sensor %}
+                            <select
+                                name="escenario"
+                                class="form-select form-select-sm"
+                                style="width: 170px;"
+                                title="Escenario del sensor simulado"
+                            >
+                                {% for clave, nombre in escenarios.items() %}
+                                <option value="{{ clave }}">{{ nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-primary text-nowrap"
+                            >
+                                <i class="bi bi-play-fill me-1"></i>
+                                Iniciar
+                            </button>
+                        </form>
+
+                        {% elif f.bloqueada_calidad %}
+
+                        <span class="small text-muted me-2">
+                            Requiere un control de calidad liberado
+                        </span>
+
+                        {% elif f.estado == 'en_curso' %}
+
+                        <div class="d-flex gap-2 justify-content-end align-items-center">
+
+                            {% if not f.puede_terminar and not f.detenida %}
+                            <span class="small text-muted">
+                                faltan ≈ {{ ((f.restante / (f.ejecucion.factor_aceleracion|float)) * 60)|round|int }} s
+                            </span>
+                            {% endif %}
+
+                            {% if f.tiene_sensor %}
+                            <a
+                                href="{{ url_for('planta.spc_operacion', ejecucion_op_id=f.ejecucion.id_ejecucion_op) }}"
+                                class="btn btn-sm btn-outline-primary text-nowrap"
+                            >
+                                <i class="bi bi-graph-up me-1"></i>
+                                Ver sensor
+                            </a>
+                            {% endif %}
+
+                            {% if f.puede_parar %}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-warning text-nowrap"
+                                data-bs-toggle="modal"
+                                data-bs-target="#paradaModal"
+                            >
+                                <i class="bi bi-pause-fill me-1"></i>
+                                Parada
+                            </button>
+                            {% endif %}
+
+                            <form
+                                method="POST"
+                                action="{{ url_for('planta.operacion_terminar', ejecucion_op_id=f.ejecucion.id_ejecucion_op) }}"
+                            >
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-success text-nowrap"
+                                    {{ 'disabled' if not f.puede_terminar }}
+                                >
+                                    <i class="bi bi-stop-fill me-1"></i>
+                                    Terminar
+                                </button>
+                            </form>
+
+                        </div>
+
+                        {% elif f.estado == 'terminada' and f.tiene_sensor %}
+
+                        <a
+                            href="{{ url_for('planta.spc_operacion', ejecucion_op_id=f.ejecucion.id_ejecucion_op) }}"
+                            class="btn btn-sm btn-outline-primary text-nowrap"
+                        >
+                            <i class="bi bi-graph-up me-1"></i>
+                            Ver sensor
+                        </a>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="7">
+
+                        <div class="text-center py-5 text-muted">
+
+                            <i class="bi bi-list-check fs-2 d-block mb-2"></i>
+
+                            Esta orden no tiene operaciones en su ruta. Agréguelas desde el detalle de la orden.
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+{# Registro de una parada de la linea #}
+<div
+    class="modal fade"
+    id="paradaModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('planta.parada_iniciar', produccion_id=produccion.id_produccion) }}"
+            >
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Registrar parada
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"
+                    ></button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+
+                        <label
+                            for="tipo_parada"
+                            class="form-label"
+                        >
+                            Tipo de parada
+                        </label>
+
+                        <select
+                            id="tipo_parada"
+                            name="tipo"
+                            class="form-select"
+                            required
+                        >
+                            <option value="">Seleccione</option>
+
+                            {% for clave, nombre in tipos_parada.items() %}
+                            <option value="{{ clave }}">{{ nombre }}</option>
+                            {% endfor %}
+                        </select>
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label
+                            for="motivo_parada"
+                            class="form-label"
+                        >
+                            Motivo
+                        </label>
+
+                        <textarea
+                            id="motivo_parada"
+                            name="motivo"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Obligatorio si el tipo es Otro"
+                        ></textarea>
+
+                    </div>
+
+                    <div class="alert alert-info mb-0">
+                        Mientras la línea esté detenida, el reloj de la operación se pausa.
+                        Pulse Reanudar cuando se retome el trabajo.
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-warning"
+                    >
+                        <i class="bi bi-pause-fill me-1"></i>
+                        Registrar parada
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+    // Ancho de las barras de avance
+    document.querySelectorAll("[data-progreso]").forEach(function (barra) {
+        barra.style.width = barra.dataset.progreso + "%";
+    });
+</script>
+
+{% if hay_en_curso %}
+<script>
+    // Mientras hay una operacion en curso, la pagina se actualiza sola para mostrar el avance
+    // (no se recarga si hay una ventana abierta, para no perder lo que se esta escribiendo)
+    setTimeout(function () {
+        if (!document.querySelector(".modal.show")) {
+            window.location.reload();
+        }
+    }, 4000);
+</script>
+{% endif %}
+{% endblock %}

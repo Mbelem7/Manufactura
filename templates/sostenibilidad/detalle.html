@@ -1,0 +1,349 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Huella de carbono de la ejecución | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{% macro n(valor, decimales) -%}
+    {{ ("{:,.%df}" % decimales).format(valor) if valor is not none else '—' }}
+{%- endmacro %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Huella de carbono de la ejecución #{{ produccion.id_produccion }}
+        </h1>
+
+        <p class="page-description">
+            Orden de producción #{{ orden.id_ordenp }} — {{ orden.producto_codigo }} {{ orden.producto_nombre }}
+            · lote {{ orden.lote_codigo or '—' }}
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <a
+            href="{{ url_for('sostenibilidad.parametros') }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-sliders me-1"></i>
+            Parámetros
+        </a>
+
+        <a
+            href="{{ url_for('sostenibilidad.resumen') }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-arrow-left me-1"></i>
+            Todas las ejecuciones
+        </a>
+
+    </div>
+
+</div>
+
+
+{% if h.sin_potencia or not factor_e or h.despachos_incompletos or not h.unidades %}
+
+<div class="alert alert-warning">
+
+    <div class="fw-semibold mb-1">
+        El cálculo está incompleto:
+    </div>
+
+    <ul class="mb-0">
+
+        {% if not factor_e %}
+        <li>No hay un factor de emisión de electricidad registrado.</li>
+        {% endif %}
+
+        {% if h.sin_potencia %}
+        <li>Falta la potencia de: {{ h.sin_potencia|join(', ') }}.</li>
+        {% endif %}
+
+        {% if h.despachos_incompletos %}
+        <li>
+            {{ h.despachos_incompletos }} {{ 'despacho no tiene' if h.despachos_incompletos == 1 else 'despachos no tienen' }}
+            peso, distancia o factor de transporte.
+        </li>
+        {% endif %}
+
+        {% if not h.unidades %}
+        <li>La ejecución aún no termina, así que no se puede dividir entre las unidades aceptadas.</li>
+        {% endif %}
+
+    </ul>
+
+</div>
+
+{% endif %}
+
+
+<div class="row g-3 mb-4">
+
+    <div class="col-md-3 col-6">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Energía consumida</div>
+                <div class="fw-semibold fs-4">{{ n(h.kwh_total, 2) if h.completo_produccion else '—' }} kWh</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Intensidad energética</div>
+                <div class="fw-semibold fs-4">{{ n(h.kwh_por_unidad, 3) }} kWh/botella</div>
+                <div class="text-muted small">{{ n(h.kwh_por_litro, 3) }} kWh/litro</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Emisiones del lote</div>
+                <div class="fw-semibold fs-4">{{ n(h.kg_total, 3) }} kg CO₂e</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Huella por botella</div>
+                <div class="fw-semibold fs-4">{{ n(h.kg_por_unidad, 4) }} kg CO₂e</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Cómo se calcula</h5>
+        <p class="text-muted mb-0">Cada resultado sale de estas fórmulas con los datos registrados en el sistema.</p>
+    </div>
+
+    <div class="p-4">
+
+        <div class="mb-3">
+            <div class="fw-semibold">1. Energía de cada operación</div>
+            <code>Energía (kWh) = Potencia del equipo (kW) × Tiempo en marcha (h)</code>
+        </div>
+
+        <div class="mb-3">
+            <div class="fw-semibold">2. Emisiones de producción</div>
+            <code>Emisiones (kg CO₂e) = Energía (kWh) × Factor eléctrico
+                ({{ ("{:.3f}".format(factor_e.valor|float)) if factor_e else '—' }} kg CO₂e/kWh)</code>
+            {% if factor_e %}
+            <div class="text-muted small">
+                {{ factor_e.concepto }} · {{ factor_e.anio }} · Fuente: {{ factor_e.fuente }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <div class="fw-semibold">3. Emisiones de transporte</div>
+            <code>Emisiones (kg CO₂e) = Peso (t) × Distancia (km) × Factor de transporte (kg CO₂e/t·km)</code>
+            {% if factor_t %}
+            <div class="text-muted small">
+                Factor por omisión: {{ ("{:.4f}".format(factor_t.valor|float)) }} · {{ factor_t.concepto }} ·
+                {{ factor_t.anio }} · Fuente: {{ factor_t.fuente }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div>
+            <div class="fw-semibold">4. Huella e intensidad por unidad</div>
+            <code>Huella por botella = (Producción + Transporte) ÷ Unidades aceptadas</code><br>
+            <code>Intensidad energética = Energía total (kWh) ÷ Unidades aceptadas</code>
+            <div class="text-muted small">
+                Unidades aceptadas: {{ h.unidades if h.unidades is not none else '—' }} ·
+                contenido por botella: {{ litros_por_unidad }} L.
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-8">
+
+        <div class="app-card h-100">
+
+            <div class="p-4 border-bottom">
+                <h5 class="mb-1">Energía por operación</h5>
+                <p class="text-muted mb-0">
+                    Tiempo en marcha en horas simuladas. El reposo cuenta aquí porque la refrigeración consume
+                    energía aunque no entre en el OEE.
+                </p>
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Operación</th>
+                            <th>Centro de trabajo</th>
+                            <th class="text-end">Potencia (kW)</th>
+                            <th class="text-end">Horas</th>
+                            <th class="text-end">Energía (kWh)</th>
+                            <th class="text-end">kg CO₂e</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for f in h.filas %}
+
+                        <tr>
+                            <td class="fw-semibold">{{ f.codigo }}</td>
+                            <td>{{ f.centro }}</td>
+                            <td class="text-end">{{ n(f.potencia, 3) if f.potencia is not none else 'sin dato' }}</td>
+                            <td class="text-end">{{ n(f.horas, 3) }}</td>
+                            <td class="text-end">{{ n(f.kwh, 4) }}</td>
+                            <td class="text-end">{{ n(f.kg, 4) }}</td>
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                Esta ejecución aún no tiene operaciones iniciadas.
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-4">
+
+        <div class="app-card h-100">
+
+            <div class="p-4 border-bottom">
+                <h5 class="mb-1">Dónde se emite</h5>
+                <p class="text-muted mb-0">kg CO₂e del lote.</p>
+            </div>
+
+            <div class="p-4">
+                <div style="height: 240px;">
+                    <canvas id="grafEmisiones"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Transporte de las unidades despachadas</h5>
+        <p class="text-muted mb-0">Despachos del lote {{ orden.lote_codigo or '—' }}.</p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Despacho</th>
+                    <th>Vehículo</th>
+                    <th class="text-end">Unidades</th>
+                    <th class="text-end">Peso por unidad (kg)</th>
+                    <th class="text-end">Toneladas</th>
+                    <th class="text-end">Distancia (km)</th>
+                    <th class="text-end">t·km</th>
+                    <th class="text-end">Factor</th>
+                    <th class="text-end">kg CO₂e</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for t in h.filas_transporte %}
+
+                <tr>
+                    <td class="fw-semibold">{{ t.codigo }}</td>
+                    <td>{{ t.vehiculo or '—' }}</td>
+                    <td class="text-end">{{ n(t.unidades, 0) }}</td>
+                    <td class="text-end">{{ n(t.peso_kg, 3) if t.peso_kg is not none else 'sin dato' }}</td>
+                    <td class="text-end">{{ n(t.toneladas, 4) }}</td>
+                    <td class="text-end">{{ n(t.distancia_km, 1) if t.distancia_km is not none else 'sin dato' }}</td>
+                    <td class="text-end">{{ n(t.tkm, 3) }}</td>
+                    <td class="text-end">{{ n(t.factor, 4) if t.factor is not none else 'sin dato' }}</td>
+                    <td class="text-end">{{ n(t.kg, 4) }}</td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        Todavía no hay despachos de este lote.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<div id="datosCarbono" data-grafico='{{ grafico|tojson }}' hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const DATOS = JSON.parse(document.getElementById("datosCarbono").dataset.grafico);
+
+        new Chart(document.getElementById("grafEmisiones"), {
+            type: "doughnut",
+            data: {
+                labels: DATOS.etiquetas,
+                datasets: [{
+                    data: DATOS.valores,
+                    backgroundColor: ["#198754", "#fd7e14"]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+    })();
+</script>
+{% endblock %}

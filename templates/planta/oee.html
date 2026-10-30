@@ -1,0 +1,397 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+OEE de la ejecución | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{# Color segun el valor: 85 % o mas es bueno, 60 % o mas aceptable, menos es bajo #}
+{% macro color(valor) -%}
+    {%- if valor is none -%}secondary
+    {%- elif valor >= 0.85 -%}success
+    {%- elif valor >= 0.60 -%}warning
+    {%- else -%}danger{%- endif -%}
+{%- endmacro %}
+
+{% macro pct(valor) -%}
+    {{ "{:.1f} %".format(valor * 100) if valor is not none else '—' }}
+{%- endmacro %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            OEE de la ejecución #{{ produccion.id_produccion }}
+        </h1>
+
+        <p class="page-description">
+            Orden de producción #{{ orden.id_ordenp }} — {{ orden.producto_codigo }} {{ orden.producto_nombre }}
+            · lote {{ orden.lote_codigo or '—' }}
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <a
+            href="{{ url_for('planta.operaciones', produccion_id=produccion.id_produccion) }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-list-check me-1"></i>
+            Operaciones
+        </a>
+
+        <a
+            href="{{ url_for('planta.oee_resumen') }}"
+            class="btn btn-light"
+        >
+            <i class="bi bi-arrow-left me-1"></i>
+            Todas las ejecuciones
+        </a>
+
+    </div>
+
+</div>
+
+
+{% if not c.hay_datos %}
+
+<div class="alert alert-info">
+    Todavía no hay operaciones de trabajo terminadas en esta ejecución, así que no se puede calcular el OEE.
+</div>
+
+{% else %}
+
+<div class="row g-3 mb-4">
+
+    {% for etiqueta, valor in [('Disponibilidad', c.disponibilidad), ('Rendimiento', c.rendimiento), ('Calidad', c.calidad), ('OEE', c.oee)] %}
+
+    <div class="col-md-3 col-6">
+
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">
+                    {{ etiqueta }}
+                </div>
+
+                <div class="fw-semibold fs-3 text-{{ color(valor) }}">
+                    {{ pct(valor) }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4">
+
+        <h5 class="mb-3">
+            Qué cuenta este resultado
+        </h5>
+
+        <p class="mb-2">
+            Se planificaron <strong>{{ "{:,.1f}".format(c.t_estandar) }} minutos</strong> de trabajo (tiempo estándar
+            de las operaciones terminadas). El tiempo transcurrido fue de
+            <strong>{{ "{:,.1f}".format(c.t_bruto) }} minutos</strong>, de los cuales la línea estuvo detenida
+            <strong>{{ "{:,.1f}".format(c.t_paradas) }} minutos</strong>
+            {% if c.t_bruto > 0 %}({{ "{:.1f}".format(c.t_paradas / c.t_bruto * 100) }} %){% endif %}.
+            Eso da una disponibilidad de <strong>{{ pct(c.disponibilidad) }}</strong>
+            y un rendimiento de <strong>{{ pct(c.rendimiento) }}</strong>
+            (tiempo estándar frente al tiempo realmente en marcha).
+        </p>
+
+        {% if c.calidad is not none %}
+        <p class="mb-2">
+            De <strong>{{ c.aceptadas + c.rechazadas }}</strong> unidades, <strong>{{ c.rechazadas }}</strong>
+            se rechazaron (scrap), lo que deja una calidad de <strong>{{ pct(c.calidad) }}</strong>.
+            El OEE resultante es <strong>{{ pct(c.oee) }}</strong>.
+        </p>
+        {% else %}
+        <p class="mb-2">
+            La calidad y el OEE se calculan al terminar la ejecución, cuando se registran las unidades
+            aceptadas y rechazadas.
+        </p>
+        {% endif %}
+
+        {% if c.espera_min > 0 %}
+        <p class="text-muted small mb-0">
+            El reposo de {{ "{:,.0f}".format(c.espera_min) }} minutos no entra en el OEE: durante ese tiempo
+            el producto está esperando, no la línea.
+        </p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+
+        <div class="app-card h-100">
+
+            <div class="p-4 border-bottom">
+                <h5 class="mb-1">Indicadores</h5>
+                <p class="text-muted mb-0">Referencia de clase mundial: OEE de 85 % o más.</p>
+            </div>
+
+            <div class="p-4">
+                <div style="height: 280px;">
+                    <canvas id="grafIndicadores"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-6">
+
+        <div class="app-card h-100">
+
+            <div class="p-4 border-bottom">
+                <h5 class="mb-1">Paradas por tipo</h5>
+                <p class="text-muted mb-0">Minutos simulados perdidos, de mayor a menor (Pareto).</p>
+            </div>
+
+            <div class="p-4">
+                {% if c.pareto %}
+                <div style="height: 280px;">
+                    <canvas id="grafPareto"></canvas>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    No hubo paradas en esta ejecución.
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Tiempos por operación</h5>
+        <p class="text-muted mb-0">En minutos simulados.</p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Operación</th>
+                    <th>Centro de trabajo</th>
+                    <th>Estado</th>
+                    <th class="text-end">Estándar</th>
+                    <th class="text-end">Transcurrido</th>
+                    <th class="text-end">Detenida</th>
+                    <th class="text-end">En marcha</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in c.filas %}
+
+                <tr>
+
+                    <td class="fw-semibold">{{ f.codigo }}</td>
+
+                    <td>{{ f.centro }}</td>
+
+                    <td>
+                        {% if f.espera %}
+                        <span class="badge text-bg-light">Espera (fuera del OEE)</span>
+                        {% elif f.estado == 'terminada' %}
+                        <span class="badge text-bg-success">Terminada</span>
+                        {% else %}
+                        <span class="badge text-bg-primary">En curso</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">{{ "{:,.1f}".format(f.estandar) }}</td>
+
+                    <td class="text-end">{{ "{:,.1f}".format(f.bruto) }}</td>
+
+                    <td class="text-end">{{ "{:,.1f}".format(f.detenido) }}</td>
+
+                    <td class="text-end">{{ "{:,.1f}".format(f.marcha) }}</td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="7">
+
+                        <div class="text-center py-4 text-muted">
+                            Esta ejecución aún no tiene operaciones iniciadas.
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Paradas registradas</h5>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Centro de trabajo</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th class="text-end">Duración (min simulados)</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in paradas %}
+
+                {% set p = item.parada %}
+
+                <tr>
+
+                    <td>{{ tipos_parada.get(p.tipo, p.tipo) }}</td>
+
+                    <td>{{ p.centro_nombre or '—' }}</td>
+
+                    <td>{{ p.fecha_inicio.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+
+                    <td>
+                        {% if p.fecha_fin %}
+                            {{ p.fecha_fin.strftime('%H:%M:%S') }}
+                        {% else %}
+                            <span class="badge text-bg-warning">Abierta</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">{{ "{:,.1f}".format(item.minutos) }}</td>
+
+                    <td>{{ p.motivo or '—' }}</td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="6">
+
+                        <div class="text-center py-4 text-muted">
+                            No se registraron paradas.
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{% if c.hay_datos %}
+<div id="datosOee" data-grafico='{{ grafico|tojson }}' hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const DATOS = JSON.parse(document.getElementById("datosOee").dataset.grafico);
+
+        const colorIndicador = function (valor) {
+            if (valor === null) { return "#adb5bd"; }
+            if (valor >= 85) { return "#198754"; }
+            if (valor >= 60) { return "#ffc107"; }
+            return "#dc3545";
+        };
+
+        new Chart(document.getElementById("grafIndicadores"), {
+            type: "bar",
+            data: {
+                labels: DATOS.indicadores.etiquetas,
+                datasets: [{
+                    label: "%",
+                    data: DATOS.indicadores.valores,
+                    backgroundColor: DATOS.indicadores.valores.map(colorIndicador)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 0, max: 100, title: { display: true, text: "%" } } }
+            }
+        });
+
+        const canvasPareto = document.getElementById("grafPareto");
+
+        if (canvasPareto) {
+            new Chart(canvasPareto, {
+                type: "bar",
+                data: {
+                    labels: DATOS.pareto.etiquetas,
+                    datasets: [{
+                        label: "Minutos",
+                        data: DATOS.pareto.valores,
+                        backgroundColor: "#fd7e14"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: "Minutos simulados" } } }
+                }
+            });
+        }
+    })();
+</script>
+{% endif %}
+{% endblock %}

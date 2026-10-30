@@ -1,0 +1,49 @@
+{% extends "layouts/base.html" %}
+{% from "tableros/_macros.html" import kpi, grafico, filtro, pct, dinero %}
+
+{% block title %}
+Tablero de compras | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Tablero de compras
+        </h1>
+
+        <p class="page-description">
+            Gasto en materiales, proveedores principales y tiempo de recepción.
+        </p>
+    </div>
+
+</div>
+
+{{ filtro(inicio, fin) }}
+
+<div class="row g-3 mb-4">
+
+    {{ kpi('Total comprado', dinero(kpis.total), 'Sin órdenes canceladas') }}
+    {{ kpi('Órdenes de compra', kpis.ordenes) }}
+    {{ kpi('Órdenes recibidas', pct(kpis.recibidas)) }}
+    {{ kpi('Tiempo hasta la recepción', ("{:,.1f} h".format(kpis.horas_recepcion)) if kpis.horas_recepcion is not none else '—', 'Promedio desde que se crea la orden') }}
+
+</div>
+
+<div class="row g-4">
+
+    {{ grafico('grafMeses', 'Compras por mes') }}
+    {{ grafico('grafEstados', 'Órdenes por estado') }}
+    {{ grafico('grafProveedores', 'Proveedores con más compras', 'Por monto.') }}
+    {{ grafico('grafMateriales', 'Materiales con más gasto', 'Por monto.') }}
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{% include "tableros/_graficos.html" %}
+{% endblock %}

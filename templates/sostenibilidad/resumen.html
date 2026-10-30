@@ -1,0 +1,153 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Huella de carbono | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{% macro n(valor, decimales) -%}
+    {{ ("{:,.%df}" % decimales).format(valor) if valor is not none else '—' }}
+{%- endmacro %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Sostenibilidad: energía y huella de carbono
+        </h1>
+
+        <p class="page-description">
+            Energía consumida, intensidad energética y emisiones de cada ejecución de producción,
+            incluido el transporte de las unidades despachadas.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('sostenibilidad.parametros') }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-sliders me-1"></i>
+        Parámetros
+    </a>
+
+</div>
+
+
+<div class="alert alert-info">
+    Las emisiones se calculan con la potencia de cada equipo, el tiempo que estuvo en marcha y los factores de
+    emisión registrados en Parámetros. Una ejecución aparece como <strong>incompleta</strong> mientras falte algún
+    dato (potencia de un equipo, peso de la botella, distancia de un despacho o un factor).
+    Contenido de cada botella: {{ litros_por_unidad }} L.
+</div>
+
+
+<div class="app-card">
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Ejecución</th>
+                    <th>Orden</th>
+                    <th>Producto</th>
+                    <th class="text-end">Energía (kWh)</th>
+                    <th class="text-end">kWh por botella</th>
+                    <th class="text-end">Producción (kg CO₂e)</th>
+                    <th class="text-end">Transporte (kg CO₂e)</th>
+                    <th class="text-end">kg CO₂e por botella</th>
+                    <th>Datos</th>
+
+                    <th class="text-end">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in filas %}
+
+                {% set e = f.ejecucion %}
+                {% set h = f.huella %}
+
+                <tr>
+
+                    <td class="fw-semibold">#{{ e.id_produccion }}</td>
+
+                    <td>
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=e.ordenp_id) }}"
+                            class="text-decoration-none"
+                        >
+                            #{{ e.ordenp_id }}
+                        </a>
+                    </td>
+
+                    <td>{{ e.producto_nombre }}</td>
+
+                    <td class="text-end">{{ n(h.kwh_total, 2) if h.completo_produccion else '—' }}</td>
+
+                    <td class="text-end">{{ n(h.kwh_por_unidad, 3) }}</td>
+
+                    <td class="text-end">{{ n(h.kg_produccion, 3) if h.completo_produccion else '—' }}</td>
+
+                    <td class="text-end">
+                        {{ n(h.kg_transporte, 3) if (h.completo_transporte and h.filas_transporte) else '—' }}
+                    </td>
+
+                    <td class="text-end fw-semibold">{{ n(h.kg_por_unidad, 4) }}</td>
+
+                    <td>
+                        {% if h.completo_produccion and h.completo_transporte %}
+                            <span class="badge text-bg-success">Completos</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">Incompleta</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('sostenibilidad.detalle', produccion_id=e.id_produccion) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver cálculo"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="10">
+
+                        <div class="text-center py-5 text-muted">
+
+                            <i class="bi bi-leaf fs-2 d-block mb-2"></i>
+
+                            Todavía no hay ejecuciones de producción registradas.
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

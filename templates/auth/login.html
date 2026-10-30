@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar sesión | Manufactura</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/login.css') }}" rel="stylesheet">
+</head>
+<body class="login-page">
+    <main class="login-shell">
+        <section class="login-intro" aria-labelledby="intro-title">
+            <div class="login-mark"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i> Manufactura</div>
+            <div class="login-intro-main">
+                <span class="login-eyebrow">SISTEMA DE GESTIÓN EMPRESARIAL</span>
+                <h1 id="intro-title">Gestión de procesos de manufactura</h1>
+                <p>Plataforma para la administración y el seguimiento de compras, inventario, producción y ventas.</p>
+                <div class="login-features" aria-label="Módulos del sistema">
+                    <span><i class="bi bi-box-seam" aria-hidden="true"></i> Inventario</span>
+                    <span><i class="bi bi-diagram-3" aria-hidden="true"></i> Producción</span>
+                    <span><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Gestión</span>
+                </div>
+            </div>
+            <div class="login-intro-footer">Plataforma ERP · Acceso autorizado</div>
+        </section>
+
+        <section class="login-form-side" aria-labelledby="login-title">
+            <div class="login-form-wrap">
+                <div class="login-mobile-brand"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i> Manufactura</div>
+                <span class="login-form-eyebrow">ACCESO AL SISTEMA</span>
+                <h2 id="login-title">Iniciar sesión</h2>
+                <p class="login-subtitle">Ingresá con tu cuenta para acceder al sistema.</p>
+
+                <div id="loginError" class="alert alert-danger d-none" role="alert" aria-live="polite"></div>
+
+                <form
+                    id="loginForm"
+                    data-login-url="{{ url_for('auth.login') }}"
+                    data-dashboard-url="{{ url_for('dashboard.index') }}"
+                    novalidate
+                >
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Correo electrónico</label>
+                        <div class="input-group login-input">
+                            <span class="input-group-text"><i class="bi bi-envelope" aria-hidden="true"></i></span>
+                            <input id="email" name="email" type="email" class="form-control" autocomplete="username"
+                                   placeholder="tuusuario@empresa.com" maxlength="255" required autofocus>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <div class="input-group login-input">
+                            <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
+                            <input id="password" name="password" type="password" class="form-control"
+                                   autocomplete="current-password" placeholder="Ingresá tu contraseña" required>
+                            <button class="btn btn-outline-secondary login-password-toggle" type="button"
+                                    id="togglePassword" aria-label="Mostrar contraseña" aria-pressed="false">
+                                <i id="togglePasswordIcon" class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 login-submit" id="loginButton">
+                        <span id="loginButtonText">Entrar al sistema</span>
+                        <i class="bi bi-arrow-right ms-2" id="loginButtonIcon" aria-hidden="true"></i>
+                    </button>
+                </form>
+                <p class="login-help">¿No podés acceder? Contactá al administrador del sistema.</p>
+            </div>
+            <footer class="login-form-footer">Manufactura · Sistema ERP</footer>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>

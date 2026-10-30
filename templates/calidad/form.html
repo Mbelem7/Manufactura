@@ -1,0 +1,172 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Nuevo control de calidad | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Nuevo control de calidad
+        </h1>
+
+        <p class="page-description">
+            Registra la revisión de un lote antes del envasado (operación OP-040).
+        </p>
+    </div>
+
+</div>
+
+
+<form method="POST">
+
+    <div class="app-card mb-4">
+
+        <div class="p-4">
+
+            <h5 class="mb-4">
+                Información de la revisión
+            </h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-12">
+
+                    <label
+                        for="ordenp_id"
+                        class="form-label"
+                    >
+                        Orden de producción
+                    </label>
+
+                    <select
+                        id="ordenp_id"
+                        name="ordenp_id"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Seleccione una orden de producción
+                        </option>
+
+                        {% for o in ordenes %}
+                        <option
+                            value="{{ o.id_ordenp }}"
+                            {{ 'selected' if orden_id == o.id_ordenp }}
+                        >
+                            #{{ o.id_ordenp }} — {{ o.producto_codigo }} {{ o.producto_nombre }}
+                            · lote {{ o.lote_codigo or '—' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="form-text">
+                        Solo aparecen las órdenes en proceso, es decir, con la ejecución iniciada.
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label
+                        for="apariencia"
+                        class="form-label"
+                    >
+                        Apariencia
+                    </label>
+
+                    <select
+                        id="apariencia"
+                        name="apariencia"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">Seleccione</option>
+                        <option value="conforme">Conforme</option>
+                        <option value="no_conforme">No conforme</option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label
+                        for="homogeneidad"
+                        class="form-label"
+                    >
+                        Homogeneidad de la mezcla
+                    </label>
+
+                    <select
+                        id="homogeneidad"
+                        name="homogeneidad"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">Seleccione</option>
+                        <option value="conforme">Conforme</option>
+                        <option value="no_conforme">No conforme</option>
+                    </select>
+
+                </div>
+
+
+                <div class="col-12">
+
+                    <label
+                        for="observaciones"
+                        class="form-label"
+                    >
+                        Observaciones
+                    </label>
+
+                    <textarea
+                        id="observaciones"
+                        name="observaciones"
+                        class="form-control"
+                        rows="3"
+                        placeholder="Obligatorio si el lote no es conforme"
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+            <div class="alert alert-info mt-4 mb-0">
+                Si ambos criterios son conformes, el lote queda liberado y puede terminarse la ejecución.
+                Si alguno no lo es, el lote queda no conforme y debe decidirse su disposición
+                (liberación, retrabajo o scrap) antes de continuar.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+
+        <a
+            href="{{ url_for('calidad.controles') }}"
+            class="btn btn-light"
+        >
+            Cancelar
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-check-lg me-1"></i>
+            Guardar control
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}
