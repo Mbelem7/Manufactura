@@ -15,7 +15,8 @@ from modulos import (
     orden_produccion,
     produccion,
     transacciones,
-    control_calidad
+    control_calidad,
+    ejecucion_operacion
 )
 # Se importa con otro nombre porque la ruta de abajo se llama "bom"
 # y pisaria el modulo si tuvieran el mismo nombre
@@ -760,6 +761,7 @@ def ejecucion_terminar(produccion_id):
     alm_mp = almacen.obtener_un_almacen(almacen_mp_id) if almacen_mp_id else None
     alm_pt = almacen.obtener_un_almacen(almacen_pt_id) if almacen_pt_id else None
     control = control_calidad.obtener_ultimo_control_por_orden(registro.ordenp_id)
+    pendientes = ejecucion_operacion.contar_operaciones_pendientes(produccion_id)
 
     if registro.fecha_fin is not None:
         flash("Esta ejecución ya fue terminada", "error")
@@ -767,6 +769,8 @@ def ejecucion_terminar(produccion_id):
         flash("Indique cantidades aceptada y rechazada válidas (enteros)", "error")
     elif alm_mp is None or alm_mp.estado != ACTIVO or alm_pt is None or alm_pt.estado != ACTIVO:
         flash("Elija los almacenes de materia prima y de producto terminado", "error")
+    elif pendientes > 0 and not (control is not None and control.disposicion == "scrap"):
+        flash("No se puede terminar: faltan operaciones de la ruta por terminar", "error")
     elif control is None or control.disposicion not in ("liberacion", "scrap"):
         flash("No se puede terminar: el lote no tiene un control de calidad aprobado", "error")
     elif control.disposicion == "scrap" and aceptada > 0:
