@@ -5,6 +5,7 @@ from sqlalchemy import text
 def insertar_detalle_orden_venta(
     ordenv_id,
     producto_id,
+    lote_id,
     cantidad,
     precio_unitario
 ):
@@ -15,6 +16,7 @@ def insertar_detalle_orden_venta(
             (
                 ordenv_id,
                 producto_id,
+                lote_id,
                 cantidad,
                 precio_unitario
             )
@@ -22,6 +24,7 @@ def insertar_detalle_orden_venta(
             (
                 :ordenv_id,
                 :producto_id,
+                :lote_id,
                 :cantidad,
                 :precio_unitario
             )
@@ -30,6 +33,7 @@ def insertar_detalle_orden_venta(
         {
             'ordenv_id': ordenv_id,
             'producto_id': producto_id,
+            'lote_id': lote_id,
             'cantidad': cantidad,
             'precio_unitario': precio_unitario
         }
@@ -52,11 +56,15 @@ def obtener_detalles_orden_venta():
                 t.producto_id,
                 t.cantidad,
                 t.precio_unitario,
+                t.lote_id,
                 pr.codigo AS producto_codigo,
                 pr.nombre AS producto_nombre,
-                pr.unidad_medida AS producto_unidad_medida
+                pr.unidad_medida AS producto_unidad_medida,
+                lo.codigo AS lote_codigo,
+                lo.fecha_vencimiento AS lote_fecha_vencimiento
             FROM DETALLE_ORDEN_VENTA t
             INNER JOIN PRODUCTO pr ON pr.id_producto = t.producto_id
+            LEFT JOIN LOTE lo ON lo.id_lote = t.lote_id
         """)
     )
 
@@ -75,11 +83,15 @@ def obtener_un_detalle_orden_venta(id_detalle_venta):
                 t.producto_id,
                 t.cantidad,
                 t.precio_unitario,
+                t.lote_id,
                 pr.codigo AS producto_codigo,
                 pr.nombre AS producto_nombre,
-                pr.unidad_medida AS producto_unidad_medida
+                pr.unidad_medida AS producto_unidad_medida,
+                lo.codigo AS lote_codigo,
+                lo.fecha_vencimiento AS lote_fecha_vencimiento
             FROM DETALLE_ORDEN_VENTA t
             INNER JOIN PRODUCTO pr ON pr.id_producto = t.producto_id
+            LEFT JOIN LOTE lo ON lo.id_lote = t.lote_id
             WHERE t.id_detalle_venta = :id_detalle_venta
         """),
         {
@@ -102,11 +114,15 @@ def obtener_detalles_orden_venta_por_ordenv(ordenv_id):
                 t.producto_id,
                 t.cantidad,
                 t.precio_unitario,
+                t.lote_id,
                 pr.codigo AS producto_codigo,
                 pr.nombre AS producto_nombre,
-                pr.unidad_medida AS producto_unidad_medida
+                pr.unidad_medida AS producto_unidad_medida,
+                lo.codigo AS lote_codigo,
+                lo.fecha_vencimiento AS lote_fecha_vencimiento
             FROM DETALLE_ORDEN_VENTA t
             INNER JOIN PRODUCTO pr ON pr.id_producto = t.producto_id
+            LEFT JOIN LOTE lo ON lo.id_lote = t.lote_id
             WHERE t.ordenv_id = :ordenv_id
         """),
         {
@@ -129,11 +145,15 @@ def obtener_detalles_orden_venta_por_producto(producto_id):
                 t.producto_id,
                 t.cantidad,
                 t.precio_unitario,
+                t.lote_id,
                 pr.codigo AS producto_codigo,
                 pr.nombre AS producto_nombre,
-                pr.unidad_medida AS producto_unidad_medida
+                pr.unidad_medida AS producto_unidad_medida,
+                lo.codigo AS lote_codigo,
+                lo.fecha_vencimiento AS lote_fecha_vencimiento
             FROM DETALLE_ORDEN_VENTA t
             INNER JOIN PRODUCTO pr ON pr.id_producto = t.producto_id
+            LEFT JOIN LOTE lo ON lo.id_lote = t.lote_id
             WHERE t.producto_id = :producto_id
         """),
         {
@@ -176,17 +196,17 @@ def actualizar_detalle_orden_venta(
     db.session.commit()
 
 
-#def eliminar_detalle_orden_venta(id_detalle_venta):
+def eliminar_detalle_orden_venta(id_detalle_venta):
     # Las lineas de detalle si se pueden borrar (no tienen estado)
 
- #   db.session.execute(
-  #      text("""
-   #         DELETE FROM DETALLE_ORDEN_VENTA
-    #        WHERE id_detalle_venta = :id_detalle_venta
-     #   """),
-      #  {
-       #     'id_detalle_venta': id_detalle_venta
-        #}
-    #)
+    db.session.execute(
+        text("""
+            DELETE FROM DETALLE_ORDEN_VENTA
+            WHERE id_detalle_venta = :id_detalle_venta
+        """),
+        {
+            'id_detalle_venta': id_detalle_venta
+        }
+    )
 
-    #db.session.commit()
+    db.session.commit()

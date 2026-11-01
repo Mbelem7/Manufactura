@@ -107,16 +107,10 @@ def _producto_terminado_activo(producto_id):
     return prod
 
 
-def _obtener_o_crear_lote(codigo, producto_id):
-    # Usa el lote existente o lo crea con ese codigo
-    existente = lote.obtener_lote_por_codigo(codigo)
-    if existente is not None:
-        if existente.producto_id != producto_id:
-            raise ValueError("El lote " + codigo + " pertenece a otro producto")
-        return existente.id_lote
-
-    ahora = datetime.now()
-    return lote.insertar_lote(codigo, ahora, ahora, producto_id)
+def _fecha(nombre):
+    # Fecha AAAA-MM-DD del formulario; vacio -> None; invalido -> ValueError
+    texto = (request.form.get(nombre) or "").strip()
+    return datetime.strptime(texto, "%Y-%m-%d").date() if texto else None
 
 
 def _bom_o_404(bom_id):
@@ -559,7 +553,8 @@ def ordenes():
 
 @produccion_bp.route("/ordenes/nueva", methods=["GET", "POST"])
 def orden_nueva():
-    # Form: producto_id, bom_id, cantidad, lote_codigo (lote del producto que se va a fabricar)
+    # Form: producto_id, bom_id, cantidad, lote_codigo, fecha_vencimiento
+    # (lote nuevo del producto que se va a fabricar)
     if request.method == "POST":
         producto_id = request.form.get("producto_id", type=int)
         bom_id = request.form.get("bom_id", type=int)
@@ -578,8 +573,11 @@ def orden_nueva():
             flash("Indique el código del lote que se va a producir", "error")
         else:
             try:
-                lote_id = _obtener_o_crear_lote(lote_codigo, producto_id)
                 ahora = datetime.now()
+                # El lote se crea sin commit: se guarda junto con la orden
+                lote_id = lote.crear_lote_nuevo(
+                    lote_codigo, producto_id, cantidad, _fecha("fecha_vencimiento"), ahora
+                )
                 orden_id = orden_produccion.insertar_orden_produccion(
                     cantidad, OP_PENDIENTE, ahora, ahora, producto_id, lote_id, bom_id
                 )
@@ -659,12 +657,30 @@ def orden_editar(orden_id):
             flash("Indique el código del lote", "error")
         else:
             try:
-                lote_id = _obtener_o_crear_lote(lote_codigo, orden.producto_id)
+                ahora = datetime.now()
+                vencimiento = _fecha("fecha_vencimiento")
+                actual = lote.obtener_un_lote(orden.lote_id) if orden.lote_id else None
+
+                if actual is not None and actual.codigo == lote_codigo:
+                    # Mismo lote: se revisa la capacidad y se actualiza su vencimiento
+                    if vencimiento is not None and vencimiento < ahora.date():
+                        raise ValueError("La fecha de vencimiento ya pasó")
+                    lote.revisar_capacidad(orden.producto_id, cantidad)
+                    lote.actualizar_lote(
+                        actual.id_lote, actual.codigo, ahora, vencimiento, actual.producto_id
+                    )
+                    lote_id = actual.id_lote
+                else:
+                    # Otro codigo: se crea un lote nuevo (se guarda junto con la orden)
+                    lote_id = lote.crear_lote_nuevo(
+                        lote_codigo, orden.producto_id, cantidad, vencimiento, ahora
+                    )
+
                 orden_produccion.actualizar_orden_produccion(
                     id_ordenp=orden_id,
                     cantidad=cantidad,
                     estado=orden.estado,
-                    fecha_modificacion=datetime.now(),
+                    fecha_modificacion=ahora,
                     producto_id=orden.producto_id,
                     lote_id=lote_id,
                     bom_id=bom_id
@@ -677,11 +693,14 @@ def orden_editar(orden_id):
 
         return redirect(url_for("produccion.orden_editar", orden_id=orden_id))
 
+    actual = lote.obtener_un_lote(orden.lote_id) if orden.lote_id else None
+
     return render_template(
         "produccion/ordenes/form.html",
         orden=orden,
         productos_terminados=[],
-        boms=bom_db.obtener_boms_por_producto(orden.producto_id)
+        boms=bom_db.obtener_boms_por_producto(orden.producto_id),
+        vencimiento=actual.fecha_vencimiento if actual else None
     )
 
 
@@ -777,6 +796,10 @@ def ejecucion_terminar(produccion_id):
         flash("El lote fue descartado (scrap): no puede tener unidades aceptadas", "error")
     else:
         try:
+            # Lo aceptado entra al lote de la orden: no puede pasar de su capacidad
+            orden = orden_produccion.obtener_un_orden_produccion(registro.ordenp_id)
+            lote.revisar_capacidad(orden.producto_id, aceptada)
+
             transacciones.finalizar_produccion(
                 produccion_id, datetime.now(), aceptada, rechazada,
                 almacen_mp_id, almacen_pt_id, OP_FINALIZADA

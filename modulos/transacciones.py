@@ -351,7 +351,7 @@ def crear_orden_compra(proveedor_id, detalles, estado, fecha):
 
 
 def crear_orden_venta(cliente_id, detalles, estado, fecha):
-    # detalles: lista de dicts {'producto_id', 'cantidad', 'precio_unitario'}
+    # detalles: lista de dicts {'producto_id', 'lote_id', 'cantidad', 'precio_unitario'}
     # Crea la orden y todas sus lineas en una sola transaccion
 
     try:
@@ -389,6 +389,7 @@ def crear_orden_venta(cliente_id, detalles, estado, fecha):
                     (
                         ordenv_id,
                         producto_id,
+                        lote_id,
                         cantidad,
                         precio_unitario
                     )
@@ -396,6 +397,7 @@ def crear_orden_venta(cliente_id, detalles, estado, fecha):
                     (
                         :ordenv_id,
                         :producto_id,
+                        :lote_id,
                         :cantidad,
                         :precio_unitario
                     )
@@ -403,6 +405,7 @@ def crear_orden_venta(cliente_id, detalles, estado, fecha):
                 {
                     'ordenv_id': id_ordenv,
                     'producto_id': d['producto_id'],
+                    'lote_id': d.get('lote_id'),
                     'cantidad': d['cantidad'],
                     'precio_unitario': d['precio_unitario']
                 }

@@ -13,6 +13,7 @@ from modulos import (
     producto,
     almacen,
     inventario,
+    lote,
     transacciones
 )
 
@@ -69,17 +70,19 @@ def _lineas_form(campos):
 
 
 def _lineas_orden():
-    # Campos: producto_id, cantidad, precio_unitario. Devuelve None si algo es invalido
+    # Campos: producto_id, lote_id, cantidad, precio_unitario. Devuelve None si algo es invalido
+    # (el lote vacio se deja en None y lo revisa _revisar_lotes)
     lineas = []
 
     try:
-        for l in _lineas_form(["producto_id", "cantidad", "precio_unitario"]):
+        for l in _lineas_form(["producto_id", "lote_id", "cantidad", "precio_unitario"]):
             cantidad = _decimal(l["cantidad"])
             precio = _decimal(l["precio_unitario"], permitir_cero=True)
             if cantidad is None or precio is None:
                 return None
             lineas.append({
                 "producto_id": int(l["producto_id"]),
+                "lote_id": int(l["lote_id"]) if l["lote_id"] else None,
                 "cantidad": cantidad,
                 "precio_unitario": precio
             })
@@ -87,6 +90,57 @@ def _lineas_orden():
         return None
 
     return lineas or None
+
+
+def _usado_por_lote(ordenv_id, excluir_detalle_id=None):
+    # Cantidad que las lineas ya guardadas de la orden toman de cada lote
+    usado = {}
+    for d in detalle_orden_venta.obtener_detalles_orden_venta_por_ordenv(ordenv_id):
+        if d.lote_id and d.id_detalle_venta != excluir_detalle_id:
+            usado[d.lote_id] = usado.get(d.lote_id, Decimal("0")) + d.cantidad
+    return usado
+
+
+def _revisar_lotes(lineas, usado=None):
+    # Revisa el lote de cada linea: que sea del producto, que no este vencido y que
+    # su existencia alcance (contando lo que otras lineas de la orden ya toman de el).
+    # Devuelve (error, avisos): error es None si todo esta bien; avisos son los
+    # lotes elegidos habiendo uno mas antiguo con existencia (FIFO).
+    disponibles = lote.obtener_lotes_disponibles_venta()
+    por_id = {l.id_lote: l for l in disponibles}
+
+    pedido = dict(usado or {})
+    for l in lineas:
+        lot = por_id.get(l["lote_id"])
+
+        if l["lote_id"] is None:
+            return "Elija el lote de cada producto", []
+        if lot is None:
+            return "El lote elegido no tiene existencias o está vencido", []
+        if lot.producto_id != l["producto_id"]:
+            return "El lote " + lot.codigo + " no es de ese producto", []
+
+        pedido[lot.id_lote] = pedido.get(lot.id_lote, Decimal("0")) + l["cantidad"]
+
+        if pedido[lot.id_lote] > lot.existencia:
+            return "El lote " + lot.codigo + " solo tiene " + str(lot.existencia) + " disponibles", []
+
+    avisos = []
+    for l in lineas:
+        elegido = por_id[l["lote_id"]]
+        # disponibles viene en orden FIFO: los anteriores del mismo producto son mas antiguos
+        for anterior in disponibles:
+            if anterior.id_lote == elegido.id_lote:
+                break
+            if anterior.producto_id == elegido.producto_id and \
+                    anterior.existencia - pedido.get(anterior.id_lote, 0) > 0:
+                avisos.append(
+                    "Se eligió el lote " + elegido.codigo + " aunque el lote "
+                    + anterior.codigo + " es más antiguo y todavía tiene existencias"
+                )
+                break
+
+    return None, avisos
 
 
 def _lineas_despacho():
@@ -196,15 +250,22 @@ def orden_nueva():
         elif any(l["producto_id"] not in {p.id_producto for p in _productos_terminados()} for l in lineas):
             flash("Solo se pueden vender productos terminados activos", "error")
         else:
-            try:
-                orden_id = transacciones.crear_orden_venta(
-                    cliente_id, lineas, OV_PENDIENTE, datetime.now()
-                )
-            except (ValueError, IntegrityError) as e:
-                flash("No se pudo crear la orden: " + str(e), "error")
+            error, avisos = _revisar_lotes(lineas)
+
+            if error:
+                flash(error, "error")
             else:
-                flash("Orden de venta creada", "exito")
-                return redirect(url_for("ventas.orden_detalle", orden_id=orden_id))
+                try:
+                    orden_id = transacciones.crear_orden_venta(
+                        cliente_id, lineas, OV_PENDIENTE, datetime.now()
+                    )
+                except (ValueError, IntegrityError) as e:
+                    flash("No se pudo crear la orden: " + str(e), "error")
+                else:
+                    flash("Orden de venta creada", "exito")
+                    for aviso in avisos:
+                        flash(aviso, "warning")
+                    return redirect(url_for("ventas.orden_detalle", orden_id=orden_id))
 
         return redirect(url_for("ventas.orden_nueva"))
 
@@ -212,7 +273,8 @@ def orden_nueva():
         "ventas/ordenes/form.html",
         orden=None,
         clientes=cliente.obtener_clientes_por_estado(ACTIVO),
-        productos=_productos_terminados()
+        productos=_productos_terminados(),
+        lotes=lote.obtener_lotes_disponibles_venta()
     )
 
 
@@ -230,6 +292,7 @@ def orden_detalle(orden_id):
         # existencia actual de cada producto, para ver si alcanza para despachar
         stock={f.id_producto: f.stock_actual for f in inventario.obtener_stock_actual()},
         productos=_productos_terminados(),
+        lotes=lote.obtener_lotes_disponibles_venta(),
         editable=(orden.estado == OV_PENDIENTE)
     )
 
@@ -291,10 +354,17 @@ def orden_detalle_agregar(orden_id):
         flash("Solo se pueden vender productos terminados activos", "error")
     else:
         l = lineas[0]
-        detalle_orden_venta.insertar_detalle_orden_venta(
-            orden_id, l["producto_id"], l["cantidad"], l["precio_unitario"]
-        )
-        flash("Línea agregada", "exito")
+        error, avisos = _revisar_lotes([l], _usado_por_lote(orden_id))
+
+        if error:
+            flash(error, "error")
+        else:
+            detalle_orden_venta.insertar_detalle_orden_venta(
+                orden_id, l["producto_id"], l["lote_id"], l["cantidad"], l["precio_unitario"]
+            )
+            flash("Línea agregada", "exito")
+            for aviso in avisos:
+                flash(aviso, "warning")
 
     return redirect(url_for("ventas.orden_detalle", orden_id=orden_id))
 
@@ -310,10 +380,20 @@ def orden_detalle_actualizar(detalle_id):
     cantidad = _decimal(request.form.get("cantidad"))
     precio = _decimal(request.form.get("precio_unitario"), permitir_cero=True)
 
+    # Las lineas viejas (sin lote) no se revisan
+    error = None
+    if detalle.lote_id and cantidad is not None:
+        error, _ = _revisar_lotes(
+            [{"producto_id": detalle.producto_id, "lote_id": detalle.lote_id, "cantidad": cantidad}],
+            _usado_por_lote(detalle.ordenv_id, excluir_detalle_id=detalle_id)
+        )
+
     if orden.estado != OV_PENDIENTE:
         flash("Solo se puede modificar una orden pendiente", "error")
     elif cantidad is None or precio is None:
         flash("Cantidad o precio inválidos", "error")
+    elif error:
+        flash(error, "error")
     else:
         detalle_orden_venta.actualizar_detalle_orden_venta(
             detalle_id, detalle.ordenv_id, detalle.producto_id, cantidad, precio
