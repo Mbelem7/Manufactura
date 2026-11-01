@@ -220,6 +220,7 @@
 
                     <p class="text-muted mb-0">
                         Registra los productos, lotes y cantidades recibidas.
+                        Cada línea crea un lote nuevo: su código no puede existir.
                     </p>
                 </div>
 
@@ -241,15 +242,19 @@
 
                     <thead>
                         <tr>
-                            <th style="width: 40%;">
+                            <th style="width: 34%;">
                                 Producto
                             </th>
 
-                            <th style="width: 30%;">
-                                Lote
+                            <th style="width: 20%;">
+                                Lote nuevo
                             </th>
 
-                            <th style="width: 20%;">
+                            <th style="width: 18%;">
+                                Vencimiento
+                            </th>
+
+                            <th style="width: 18%;">
                                 Cantidad
                             </th>
 
@@ -297,7 +302,18 @@
                                     name="lote_codigo"
                                     class="form-control"
                                     placeholder="Ej. LOT-001"
+                                    title="Código de un lote nuevo; no puede existir"
                                     required
+                                >
+                            </td>
+
+
+                            <td>
+                                <input
+                                    type="date"
+                                    name="fecha_vencimiento"
+                                    class="form-control"
+                                    title="Opcional"
                                 >
                             </td>
 

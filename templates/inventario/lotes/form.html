@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 
-{# lote = None al crear; con datos al editar (solo se cambia el codigo) #}
+{# lote = None al crear; con datos al editar (solo se cambia el codigo y el vencimiento) #}
 
 {% block title %}
 {{ 'Editar' if lote else 'Nuevo' }} lote | Manufactura
@@ -17,8 +17,8 @@
 
         <p class="page-description">
             {% if lote %}
-                Cambia el código del lote. El producto no se puede modificar
-                porque el lote ya puede tener existencias.
+                Cambia el código o la fecha de vencimiento del lote. El producto no se puede
+                modificar porque el lote ya puede tener existencias.
             {% else %}
                 Registra un lote asociado a un producto.
             {% endif %}
@@ -108,6 +108,30 @@
                     </div>
 
                     {% endif %}
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <label
+                        for="fecha_vencimiento"
+                        class="form-label"
+                    >
+                        Fecha de vencimiento
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fecha_vencimiento"
+                        name="fecha_vencimiento"
+                        class="form-control"
+                        value="{{ lote.fecha_vencimiento.strftime('%Y-%m-%d') if lote and lote.fecha_vencimiento else '' }}"
+                    >
+
+                    <div class="form-text">
+                        Opcional. Los lotes vencidos no se pueden vender.
+                    </div>
 
                 </div>
 

@@ -216,6 +216,7 @@ Detalle de orden de venta | Manufactura
                     <thead>
                         <tr>
                             <th>Producto</th>
+                            <th>Lote</th>
                             <th>Unidad</th>
                             <th class="text-end">
                                 Cantidad
@@ -247,6 +248,19 @@ Detalle de orden de venta | Manufactura
 
                                 <td>
                                     {{ d.producto_codigo }} — {{ d.producto_nombre }}
+                                </td>
+
+                                <td>
+                                    {% if d.lote_codigo %}
+                                        {{ d.lote_codigo }}
+                                        {% if d.lote_fecha_vencimiento %}
+                                        <div class="text-muted small">
+                                            Vence {{ d.lote_fecha_vencimiento.strftime('%d/%m/%Y') }}
+                                        </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
                                 </td>
 
                                 <td>
@@ -348,7 +362,7 @@ Detalle de orden de venta | Manufactura
 
                             <tr>
 
-                                <td colspan="{{ 7 if editable else 6 }}">
+                                <td colspan="{{ 8 if editable else 7 }}">
 
                                     <div class="text-center py-4 text-muted">
                                         No hay productos asociados a esta orden.
@@ -378,11 +392,12 @@ Detalle de orden de venta | Manufactura
                 <form
                     method="POST"
                     action="{{ url_for('ventas.orden_detalle_agregar', orden_id=orden.id_ordenv) }}"
+                    data-lote-fila
                 >
 
-                    <div class="row g-3 align-items-end">
+                    <div class="row g-3 align-items-start">
 
-                        <div class="col-md-5">
+                        <div class="col-md-6">
 
                             <label
                                 for="nuevo_producto"
@@ -414,7 +429,22 @@ Detalle de orden de venta | Manufactura
                         </div>
 
 
-                        <div class="col-md-2">
+                        <div class="col-md-6">
+
+                            <label
+                                for="nuevo_lote"
+                                class="form-label"
+                            >
+                                Lote
+                            </label>
+
+                            {% set lote_select_id = "nuevo_lote" %}
+                            {% include "components/lote_select.html" %}
+
+                        </div>
+
+
+                        <div class="col-md-4">
 
                             <label
                                 for="nueva_cantidad"
@@ -437,7 +467,7 @@ Detalle de orden de venta | Manufactura
                         </div>
 
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
 
                             <label
                                 for="nuevo_precio"
@@ -468,7 +498,11 @@ Detalle de orden de venta | Manufactura
                         </div>
 
 
-                        <div class="col-md-2 d-grid">
+                        <div class="col-md-4 d-grid">
+
+                            <label class="form-label invisible">
+                                Agregar
+                            </label>
 
                             <button
                                 type="submit"
@@ -508,6 +542,9 @@ Detalle de orden de venta | Manufactura
         document.getElementById("nuevo_precio").value =
             opcion && opcion.dataset.precio ? opcion.dataset.precio : "";
     });
+</script>
+<script
+    src="{{ url_for('static', filename='js/lote-venta.js') }}">
 </script>
 {% endif %}
 

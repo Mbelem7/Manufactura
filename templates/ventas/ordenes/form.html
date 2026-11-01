@@ -92,6 +92,7 @@
 
                     <p class="text-muted mb-0">
                         Agregá los productos solicitados por el cliente.
+                        Se propone primero el lote más antiguo (FIFO).
                     </p>
                 </div>
 
@@ -113,15 +114,19 @@
 
                     <thead>
                         <tr>
-                            <th style="width: 45%;">
+                            <th style="width: 32%;">
                                 Producto
                             </th>
 
-                            <th style="width: 20%;">
+                            <th style="width: 28%;">
+                                Lote
+                            </th>
+
+                            <th style="width: 13%;">
                                 Cantidad
                             </th>
 
-                            <th style="width: 25%;">
+                            <th style="width: 17%;">
                                 Precio unitario
                             </th>
 
@@ -136,7 +141,7 @@
 
                     <tbody id="saleItemsTableBody">
 
-                        <tr class="sale-item-row">
+                        <tr class="sale-item-row" data-lote-fila>
 
                             <td>
 
@@ -158,6 +163,13 @@
                                     </option>
                                     {% endfor %}
                                 </select>
+
+                            </td>
+
+
+                            <td>
+
+                                {% include "components/lote_select.html" %}
 
                             </td>
 
@@ -256,6 +268,9 @@
 {% if not orden %}
 <script
     src="{{ url_for('static', filename='js/orden-venta-form.js') }}">
+</script>
+<script
+    src="{{ url_for('static', filename='js/lote-venta.js') }}">
 </script>
 {% endif %}
 

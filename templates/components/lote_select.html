@@ -1,0 +1,36 @@
+{# Selector de lote de una linea de venta (lo maneja static/js/lote-venta.js).
+   Necesita "lotes" (en orden FIFO) y debe estar dentro de un elemento con data-lote-fila.
+   Las opciones quedan ocultas hasta que se elige el producto. #}
+
+<select
+    {% if lote_select_id is defined %}id="{{ lote_select_id }}"{% endif %}
+    name="lote_id"
+    class="form-select"
+    required
+>
+    <option value="">
+        Elija primero un producto
+    </option>
+
+    {% for l in lotes %}
+    <option
+        value="{{ l.id_lote }}"
+        data-producto="{{ l.producto_id }}"
+        data-codigo="{{ l.codigo }}"
+        data-existencia="{{ l.existencia }}"
+        hidden
+        disabled
+    >
+        {{ l.codigo }}
+        · ingreso {{ l.fecha_ingreso.strftime('%d/%m/%Y') if l.fecha_ingreso }}
+        {% if l.fecha_vencimiento %}· vence {{ l.fecha_vencimiento.strftime('%d/%m/%Y') }}{% endif %}
+        · disp. {{ "{:,.2f}".format(l.existencia) }}
+    </option>
+    {% endfor %}
+</select>
+
+<div
+    class="form-text text-warning"
+    data-aviso-fifo
+    hidden
+></div>

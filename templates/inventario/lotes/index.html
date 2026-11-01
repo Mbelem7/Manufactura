@@ -126,6 +126,8 @@ Lotes | Manufactura
                     <th>Fecha de creación</th>
                     {% endif %}
 
+                    <th>Vencimiento</th>
+
                     <th class="text-end">
                         Acciones
                     </th>
@@ -159,6 +161,17 @@ Lotes | Manufactura
                     </td>
                     {% endif %}
 
+                    <td>
+                        {% if l.fecha_vencimiento %}
+                            {{ l.fecha_vencimiento.strftime('%d/%m/%Y') }}
+                            {% if l.fecha_vencimiento < hoy %}
+                            <span class="badge text-bg-danger ms-1">Vencido</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+
                     <td class="text-end">
 
                         <a
@@ -177,7 +190,7 @@ Lotes | Manufactura
 
                 <tr>
 
-                    <td colspan="4">
+                    <td colspan="5">
 
                         <div class="text-center py-5 text-muted">
 

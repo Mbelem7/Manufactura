@@ -148,7 +148,7 @@
                     >
 
                     <div class="form-text">
-                        Código del lote que se va a producir. Si no existe, se crea.
+                        Código del lote nuevo que se va a producir. No puede ser uno que ya exista.
                     </div>
 
                 </div>
@@ -184,6 +184,30 @@
                             {{ orden.producto_unidad_medida if orden else 'unidad' }}
                         </span>
 
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label
+                        for="fecha_vencimiento"
+                        class="form-label"
+                    >
+                        Fecha de vencimiento del lote
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fecha_vencimiento"
+                        name="fecha_vencimiento"
+                        class="form-control"
+                        value="{{ vencimiento.strftime('%Y-%m-%d') if vencimiento else '' }}"
+                    >
+
+                    <div class="form-text">
+                        Opcional. Los lotes vencidos no se pueden vender.
                     </div>
 
                 </div>
