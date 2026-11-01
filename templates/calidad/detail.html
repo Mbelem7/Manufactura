@@ -1,0 +1,371 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Detalle de control de calidad | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Control de calidad #{{ control.id_control }}
+        </h1>
+
+        <p class="page-description">
+            Revisión del lote {{ control.lote_codigo or '—' }} de la orden de producción #{{ control.ordenp_id }}.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('calidad.controles') }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver
+    </a>
+
+</div>
+
+
+<div class="row g-4">
+
+    <div class="col-lg-5">
+
+        <div class="app-card">
+
+            <div class="p-4">
+
+                <h5 class="mb-4">
+                    Revisión
+                </h5>
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Orden de producción
+                    </div>
+
+                    <div>
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=control.ordenp_id) }}"
+                            class="fw-semibold text-decoration-none"
+                        >
+                            #{{ control.ordenp_id }}
+                        </a>
+                        — {{ control.producto_codigo }} {{ control.producto_nombre }}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Lote
+                    </div>
+
+                    <div>
+                        {{ control.lote_codigo or '—' }}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Apariencia
+                    </div>
+
+                    <div>
+                        {% if control.apariencia_ok %}
+                            <span class="badge text-bg-success">Conforme</span>
+                        {% else %}
+                            <span class="badge text-bg-danger">No conforme</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Homogeneidad
+                    </div>
+
+                    <div>
+                        {% if control.homogeneidad_ok %}
+                            <span class="badge text-bg-success">Conforme</span>
+                        {% else %}
+                            <span class="badge text-bg-danger">No conforme</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Resultado
+                    </div>
+
+                    <div>
+                        {% if control.resultado == 'conforme' %}
+                            <span class="badge text-bg-success">Conforme</span>
+                        {% else %}
+                            <span class="badge text-bg-danger">No conforme</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Observaciones
+                    </div>
+
+                    <div>
+                        {{ control.observaciones or '—' }}
+                    </div>
+                </div>
+
+
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">
+                        Inspector
+                    </div>
+
+                    <div>
+                        {% if control.inspector_nombre_1 %}
+                            {{ control.inspector_nombre_1 }} {{ control.inspector_apellido_1 }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <div>
+                    <div class="text-muted small mb-1">
+                        Fecha de la revisión
+                    </div>
+
+                    <div>
+                        {{ control.fecha_creacion.strftime('%d/%m/%Y %H:%M') if control.fecha_creacion }}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-7">
+
+        <div class="app-card mb-4">
+
+            <div class="p-4">
+
+                <h5 class="mb-1">
+                    Disposición del lote
+                </h5>
+
+                {% if control.disposicion %}
+
+                <p class="text-muted">
+                    Decisión registrada para este control.
+                </p>
+
+                <div class="mb-3">
+                    {% if control.disposicion == 'liberacion' %}
+                        <span class="badge text-bg-success fs-6">Liberación</span>
+                    {% elif control.disposicion == 'retrabajo' %}
+                        <span class="badge text-bg-warning fs-6">Retrabajo</span>
+                    {% else %}
+                        <span class="badge text-bg-dark fs-6">Scrap</span>
+                    {% endif %}
+                </div>
+
+                {% if control.motivo_disposicion %}
+                <div class="mb-2">
+                    <div class="text-muted small mb-1">
+                        Motivo
+                    </div>
+
+                    <div>
+                        {{ control.motivo_disposicion }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if control.fecha_disposicion %}
+                <div class="text-muted small">
+                    Decidida el {{ control.fecha_disposicion.strftime('%d/%m/%Y %H:%M') }}
+                </div>
+                {% endif %}
+
+                {% if control.resultado == 'conforme' %}
+                <div class="text-muted small mt-2">
+                    Un lote conforme se libera automáticamente.
+                </div>
+                {% endif %}
+
+                {% elif pendiente %}
+
+                <p class="text-muted">
+                    El lote no es conforme: está separado hasta que se decida qué hacer con él.
+                </p>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('calidad.control_disposicion', control_id=control.id_control) }}"
+                >
+
+                    <div class="row g-3">
+
+                        <div class="col-md-12">
+
+                            <label
+                                for="disposicion"
+                                class="form-label"
+                            >
+                                Disposición
+                            </label>
+
+                            <select
+                                id="disposicion"
+                                name="disposicion"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">Seleccione</option>
+                                <option value="liberacion">Liberación (aprobar con concesión)</option>
+                                <option value="retrabajo">Retrabajo (volver a elaboración)</option>
+                                <option value="scrap">Scrap (descartar el lote)</option>
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-12">
+
+                            <label
+                                for="motivo"
+                                class="form-label"
+                            >
+                                Motivo de la decisión
+                            </label>
+
+                            <textarea
+                                id="motivo"
+                                name="motivo"
+                                class="form-control"
+                                rows="3"
+                                required
+                            ></textarea>
+
+                        </div>
+
+
+                        <div class="col-md-12 d-grid">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                            >
+                                <i class="bi bi-check-lg me-1"></i>
+                                Registrar disposición
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+                {% else %}
+
+                <p class="text-muted mb-0">
+                    Este control no tiene una disposición pendiente.
+                </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <div class="app-card">
+
+            <div class="p-4 border-bottom">
+
+                <h5 class="mb-1">
+                    Historial de la orden
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Todos los controles de la orden; el más reciente decide si el lote puede continuar.
+                </p>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Control</th>
+                            <th>Fecha</th>
+                            <th>Resultado</th>
+                            <th>Disposición</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for h in historial %}
+
+                        <tr>
+
+                            <td>
+                                <a
+                                    href="{{ url_for('calidad.control_detalle', control_id=h.id_control) }}"
+                                    class="text-decoration-none"
+                                >
+                                    #{{ h.id_control }}
+                                </a>
+                            </td>
+
+                            <td>
+                                {{ h.fecha_creacion.strftime('%d/%m/%Y %H:%M') if h.fecha_creacion }}
+                            </td>
+
+                            <td>
+                                {% if h.resultado == 'conforme' %}
+                                    <span class="badge text-bg-success">Conforme</span>
+                                {% else %}
+                                    <span class="badge text-bg-danger">No conforme</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ h.disposicion|capitalize if h.disposicion else 'Pendiente' }}
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

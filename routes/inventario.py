@@ -73,7 +73,24 @@ def _datos_producto():
         flash("Precio y costo deben ser números mayores o iguales a 0", "error")
         return None
 
+    # Capacidad maxima de un lote (unidades por caja o empaque); vacio -> sin limite
+    datos["capacidad_lote"] = None
+    if _texto("capacidad_lote"):
+        datos["capacidad_lote"] = _numero("capacidad_lote")
+        if datos["capacidad_lote"] is None or datos["capacidad_lote"] <= 0:
+            flash("La capacidad del lote debe ser un número mayor a 0", "error")
+            return None
+
     return datos
+
+
+def _fecha(nombre):
+    # Fecha AAAA-MM-DD del formulario; vacio o invalido -> None
+    texto = (request.form.get(nombre) or "").strip()
+    try:
+        return datetime.strptime(texto, "%Y-%m-%d").date() if texto else None
+    except ValueError:
+        return None
 
 
 def _datos_almacen():
@@ -306,17 +323,19 @@ def lotes():
         "inventario/lotes/index.html",
         lotes=lista,
         productos=producto.obtener_productos_por_estado(ACTIVO),
-        producto_id=producto_id
+        producto_id=producto_id,
+        hoy=datetime.now().date()
     )
 
 
 @inventario_bp.route("/lotes/nuevo", methods=["GET", "POST"])
 def lote_nuevo():
-    # Form: codigo, producto_id
+    # Form: codigo, producto_id, fecha_vencimiento (opcional)
     if request.method == "POST":
         codigo = _texto("codigo")
         producto_id = request.form.get("producto_id", type=int)
         prod = producto.obtener_un_producto(producto_id) if producto_id else None
+        vencimiento = _fecha("fecha_vencimiento")
 
         if not codigo:
             flash("Indique el código del lote", "error")
@@ -324,9 +343,11 @@ def lote_nuevo():
             flash("Debe elegir un producto activo", "error")
         elif lote.obtener_lote_por_codigo(codigo) is not None:
             flash("Ya existe un lote con ese código", "error")
+        elif _texto("fecha_vencimiento") and vencimiento is None:
+            flash("Fecha de vencimiento inválida", "error")
         else:
             ahora = datetime.now()
-            lote.insertar_lote(codigo, ahora, ahora, producto_id)
+            lote.insertar_lote(codigo, ahora, ahora, producto_id, vencimiento)
             flash("Lote creado", "exito")
             return redirect(url_for("inventario.lotes"))
 
@@ -341,7 +362,7 @@ def lote_nuevo():
 
 @inventario_bp.route("/lotes/<int:lote_id>/editar", methods=["GET", "POST"])
 def lote_editar(lote_id):
-    # Solo se permite cambiar el codigo: cambiar el producto descuadraria el inventario
+    # Solo se cambia el codigo y el vencimiento: cambiar el producto descuadraria el inventario
     lot = lote.obtener_un_lote(lote_id)
     if lot is None:
         abort(404)
@@ -349,13 +370,16 @@ def lote_editar(lote_id):
     if request.method == "POST":
         codigo = _texto("codigo")
         otro = lote.obtener_lote_por_codigo(codigo) if codigo else None
+        vencimiento = _fecha("fecha_vencimiento")
 
         if not codigo:
             flash("Indique el código del lote", "error")
         elif otro is not None and otro.id_lote != lote_id:
             flash("Ya existe un lote con ese código", "error")
+        elif _texto("fecha_vencimiento") and vencimiento is None:
+            flash("Fecha de vencimiento inválida", "error")
         else:
-            lote.actualizar_lote(lote_id, codigo, datetime.now(), lot.producto_id)
+            lote.actualizar_lote(lote_id, codigo, datetime.now(), vencimiento, lot.producto_id)
             flash("Lote actualizado", "exito")
             return redirect(url_for("inventario.lotes"))
 

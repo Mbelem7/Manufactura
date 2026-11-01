@@ -1,0 +1,510 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Sensor y control estadístico | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Sensor de temperatura
+        </h1>
+
+        <p class="page-description">
+            {{ ej.ruta_codigo }} · {{ ej.centro_codigo }} {{ ej.centro_nombre }}
+            · orden #{{ ej.ordenp_id }}
+            · escenario simulado: <strong>{{ escenario }}</strong>
+            · factor ×{{ "{:,.0f}".format(ej.factor_aceleracion) }}
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('planta.operaciones', produccion_id=ej.produccion_id) }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver
+    </a>
+
+</div>
+
+
+<div class="alert alert-warning" id="errorConexion" hidden>
+    No se pudieron cargar las lecturas. Se volverá a intentar.
+</div>
+
+
+<div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Estado de la operación</div>
+                <div class="fw-semibold fs-5" id="estadoOp">—</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Minuto simulado</div>
+                <div class="fw-semibold fs-5">
+                    <span id="minutoSim">—</span> / {{ "{:,.0f}".format(ej.tiempo_estandar_min) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Lecturas</div>
+                <div class="fw-semibold fs-5" id="numLecturas">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">Alertas SPC</div>
+                <div class="fw-semibold fs-5" id="numAlertas">0</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+
+        <h5 class="mb-1">
+            Monitoreo de la cocción
+        </h5>
+
+        <p class="text-muted mb-0">
+            Temperatura registrada minuto a minuto. Objetivo {{ "{:,.1f}".format(parametro.valor_objetivo) }} °C;
+            especificación {{ "{:,.1f}".format(parametro.limite_inferior) }}–{{ "{:,.1f}".format(parametro.limite_superior) }} °C.
+        </p>
+
+    </div>
+
+    <div class="p-4">
+        <div style="height: 300px;">
+            <canvas id="grafMonitoreo"></canvas>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+
+        <h5 class="mb-1">
+            Carta de control individual (SPC)
+        </h5>
+
+        <p class="text-muted mb-0">
+            Solo se controlan las lecturas de la fase estable (el mezclado), después del calentamiento y el enfriamiento. Los límites de control (±3σ)
+            se calculan con las primeras 15 lecturas estables, no con las especificaciones; los puntos rojos
+            incumplen alguna regla.
+        </p>
+
+    </div>
+
+    <div class="p-4">
+
+        <div class="alert alert-info" id="avisoSpc" hidden>
+            Se necesitan al menos 8 lecturas de la fase estable para calcular los límites de control.
+        </div>
+
+        <div style="height: 320px;">
+            <canvas id="grafSpc"></canvas>
+        </div>
+
+        <div class="row g-3 mt-2">
+
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Línea central</div>
+                <div class="fw-semibold"><span id="valCl">—</span> °C</div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Desviación (σ)</div>
+                <div class="fw-semibold" id="valSigma">—</div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Cp</div>
+                <div class="fw-semibold" id="valCp">—</div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="text-muted small">Cpk</div>
+                <div class="fw-semibold" id="valCpk">—</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+
+        <h5 class="mb-1">
+            Diagnóstico del sensor (árbol de decisión)
+        </h5>
+
+        <p class="text-muted mb-0">
+            Decide si el sensor funciona bien o necesita calibración o mantenimiento. Un problema del proceso
+            no cuenta como falla del sensor.
+            <a href="{{ url_for('sensores.modelo') }}" class="text-decoration-none">Ver el modelo</a>
+        </p>
+
+    </div>
+
+    <div class="p-4">
+
+        <div id="diagAviso" class="text-muted">
+            Esperando lecturas del sensor...
+        </div>
+
+        <div id="diagContenido" hidden>
+
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <span id="diagBadge" class="badge fs-6"></span>
+                <span id="diagProb" class="text-muted"></span>
+            </div>
+
+            <p id="diagRecomendacion" class="mb-4"></p>
+
+            <div class="row g-4">
+
+                <div class="col-lg-6">
+                    <h6 class="mb-2">Lo que midió el modelo</h6>
+
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody id="diagCaracteristicas"></tbody>
+                    </table>
+                </div>
+
+                <div class="col-lg-6">
+                    <h6 class="mb-2">Por qué: camino que siguió el árbol</h6>
+
+                    <ol id="diagCamino" class="mb-0"></ol>
+                </div>
+
+            </div>
+
+            <div id="diagPie" class="text-muted small mt-3"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+
+        <h5 class="mb-1">
+            Alertas
+        </h5>
+
+        <p class="text-muted mb-0">
+            Reglas aplicadas: un punto fuera de ±3σ, dos de tres puntos a más de 2σ del mismo lado,
+            ocho puntos seguidos del mismo lado de la línea central y un punto fuera de la especificación.
+        </p>
+
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Minuto</th>
+                    <th>Regla</th>
+                    <th>Nivel</th>
+                    <th>Mensaje</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaAlertas">
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        Sin alertas hasta el momento.
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const URL_DATOS = "{{ url_for('planta.lecturas_json', ejecucion_op_id=ej.id_ejecucion_op) }}";
+
+        const REGLAS = {
+            fuera_3sigma: "Fuera de ±3σ",
+            dos_de_tres_2sigma: "2 de 3 a más de 2σ",
+            racha_8: "Racha de 8",
+            fuera_especificacion: "Fuera de especificación"
+        };
+
+        const NIVELES = {
+            critica: "danger",
+            advertencia: "warning"
+        };
+
+        const fmt = (n, d) => (n === null || n === undefined) ? "—" : Number(n).toFixed(d === undefined ? 2 : d);
+
+        const serie = (etiqueta, color, extra) => Object.assign({
+            label: etiqueta,
+            data: [],
+            borderColor: color,
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false
+        }, extra || {});
+
+        const opciones = (eje) => ({
+            animation: false,
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: "Minuto del proceso" } },
+                y: { title: { display: true, text: eje } }
+            }
+        });
+
+        const grafMonitoreo = new Chart(document.getElementById("grafMonitoreo"), {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: "Temperatura",
+                        data: [],
+                        borderColor: "#0d6efd",
+                        backgroundColor: "#0d6efd",
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0.2
+                    },
+                    serie("Objetivo", "#198754", { borderDash: [6, 4] }),
+                    serie("Especificación mínima", "#dc3545", { borderDash: [2, 3] }),
+                    serie("Especificación máxima", "#dc3545", { borderDash: [2, 3] })
+                ]
+            },
+            options: opciones("°C")
+        });
+
+        const grafSpc = new Chart(document.getElementById("grafSpc"), {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: "Lectura",
+                        data: [],
+                        borderColor: "#0d6efd",
+                        backgroundColor: "#0d6efd",
+                        borderWidth: 1.5,
+                        pointRadius: 3,
+                        pointBackgroundColor: [],
+                        tension: 0
+                    },
+                    serie("Línea central", "#198754", { borderDash: [6, 4] }),
+                    serie("Límite superior (+3σ)", "#dc3545"),
+                    serie("Límite inferior (−3σ)", "#dc3545"),
+                    serie("+2σ", "#fd7e14", { borderDash: [2, 3] }),
+                    serie("−2σ", "#fd7e14", { borderDash: [2, 3] })
+                ]
+            },
+            options: opciones("°C")
+        });
+
+        function actualizar(d) {
+            // Monitoreo: toda la temperatura registrada
+            const minutos = d.lecturas.map(l => l.minuto);
+            const mon = grafMonitoreo.data;
+
+            mon.labels = minutos;
+            mon.datasets[0].data = d.lecturas.map(l => l.valor);
+            mon.datasets[1].data = minutos.map(() => d.objetivo);
+            mon.datasets[2].data = minutos.map(() => d.lsl);
+            mon.datasets[3].data = minutos.map(() => d.usl);
+            grafMonitoreo.update();
+
+            // SPC: solo la fase estable
+            const estables = d.lecturas.filter(l => l.minuto >= d.inicio_estable);
+            const fuera = new Set(d.violaciones.map(v => v.minuto));
+            const spc = grafSpc.data;
+            const con = d.suficiente;
+
+            spc.labels = estables.map(l => l.minuto);
+            spc.datasets[0].data = estables.map(l => l.valor);
+            spc.datasets[0].pointBackgroundColor = estables.map(l => fuera.has(l.minuto) ? "#dc3545" : "#0d6efd");
+            spc.datasets[0].pointRadius = estables.map(l => fuera.has(l.minuto) ? 6 : 3);
+            spc.datasets[1].data = con ? estables.map(() => d.cl) : [];
+            spc.datasets[2].data = con ? estables.map(() => d.ucl) : [];
+            spc.datasets[3].data = con ? estables.map(() => d.lcl) : [];
+            spc.datasets[4].data = con ? estables.map(() => d.mas2) : [];
+            spc.datasets[5].data = con ? estables.map(() => d.menos2) : [];
+            grafSpc.update();
+
+            document.getElementById("avisoSpc").hidden = con;
+
+            // Tarjetas y estadisticos
+            document.getElementById("estadoOp").textContent =
+                d.estado === "terminada" ? "Terminada" : (d.detenida ? "Línea detenida" : "En curso");
+            document.getElementById("minutoSim").textContent = fmt(d.minuto_actual, 1);
+            document.getElementById("numLecturas").textContent = d.lecturas.length;
+            document.getElementById("valCl").textContent = fmt(d.cl);
+            document.getElementById("valSigma").textContent = fmt(d.sigma, 3);
+            document.getElementById("valCp").textContent = fmt(d.cp);
+            document.getElementById("valCpk").textContent = fmt(d.cpk);
+
+            // Alertas
+            document.getElementById("numAlertas").textContent = d.violaciones.length;
+
+            const cuerpo = document.getElementById("tablaAlertas");
+
+            if (d.violaciones.length === 0) {
+                cuerpo.innerHTML =
+                    '<tr><td colspan="4" class="text-center text-muted py-4">Sin alertas hasta el momento.</td></tr>';
+            } else {
+                cuerpo.innerHTML = d.violaciones.map(function (v) {
+                    return '<tr>' +
+                        '<td>' + v.minuto + '</td>' +
+                        '<td>' + (REGLAS[v.regla] || v.regla) + '</td>' +
+                        '<td><span class="badge text-bg-' + (NIVELES[v.nivel] || "secondary") + '">' + v.nivel + '</span></td>' +
+                        '<td>' + v.mensaje + '</td>' +
+                        '</tr>';
+                }).join("");
+            }
+        }
+
+        const URL_DIAGNOSTICO = "{{ url_for('sensores.diagnostico_json', ejecucion_op_id=ej.id_ejecucion_op) }}";
+
+        const COLORES_DIAGNOSTICO = {
+            normal: "success",
+            calibrar: "warning",
+            mantenimiento: "danger"
+        };
+
+        async function consultarDiagnostico() {
+            try {
+                const respuesta = await fetch(URL_DIAGNOSTICO);
+
+                if (!respuesta.ok) {
+                    return;
+                }
+
+                const d = await respuesta.json();
+                const aviso = document.getElementById("diagAviso");
+                const contenido = document.getElementById("diagContenido");
+
+                if (d.sin_sensor || !d.suficiente) {
+                    aviso.textContent = d.sin_sensor
+                        ? "Este centro de trabajo no tiene un sensor registrado."
+                        : "Se necesitan al menos 8 lecturas de la fase estable para diagnosticar el sensor.";
+                    aviso.hidden = false;
+                    contenido.hidden = true;
+                    return;
+                }
+
+                aviso.hidden = true;
+                contenido.hidden = false;
+
+                const insignia = document.getElementById("diagBadge");
+                insignia.className = "badge fs-6 text-bg-" + (COLORES_DIAGNOSTICO[d.diagnostico] || "secondary");
+                insignia.textContent = d.etiqueta;
+
+                document.getElementById("diagProb").textContent =
+                    "Confianza del modelo: " + Math.round(d.probabilidad * 100) + " %";
+                document.getElementById("diagRecomendacion").textContent = d.recomendacion;
+
+                const tabla = document.getElementById("diagCaracteristicas");
+                tabla.innerHTML = "";
+                d.caracteristicas.forEach(function (c) {
+                    const fila = document.createElement("tr");
+                    const nombre = document.createElement("td");
+                    const valor = document.createElement("td");
+                    nombre.textContent = c.nombre;
+                    valor.textContent = c.texto;
+                    valor.className = "text-end fw-semibold";
+                    fila.appendChild(nombre);
+                    fila.appendChild(valor);
+                    tabla.appendChild(fila);
+                });
+
+                const lista = document.getElementById("diagCamino");
+                lista.innerHTML = "";
+                d.camino.forEach(function (paso) {
+                    const item = document.createElement("li");
+                    item.textContent = paso;
+                    lista.appendChild(item);
+                });
+
+                document.getElementById("diagPie").textContent =
+                    d.sensor + " · " + d.dias_calibracion + " días desde la última calibración" +
+                    (d.guardado ? " · diagnóstico guardado" : " · el diagnóstico se guarda al terminar la operación");
+            } catch (error) {
+                // el diagnostico es complementario: si falla, la grafica sigue funcionando
+            }
+        }
+
+
+        async function consultar() {
+            try {
+                const respuesta = await fetch(URL_DATOS);
+
+                if (!respuesta.ok) {
+                    throw new Error("Respuesta no valida");
+                }
+
+                const datos = await respuesta.json();
+
+                document.getElementById("errorConexion").hidden = true;
+                actualizar(datos);
+                consultarDiagnostico();
+
+                // Cuando la operacion termina ya no hay lecturas nuevas
+                if (datos.estado === "terminada") {
+                    clearInterval(reloj);
+                }
+            } catch (error) {
+                document.getElementById("errorConexion").hidden = false;
+            }
+        }
+
+        consultar();
+        const reloj = setInterval(consultar, 3000);
+    })();
+</script>
+{% endblock %}

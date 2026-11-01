@@ -1,0 +1,234 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Modelo de diagnóstico | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{% set colores = {'normal': 'success', 'calibrar': 'warning', 'mantenimiento': 'danger'} %}
+
+{# Un nodo del arbol: una pregunta con sus dos caminos, o una hoja con la decision final #}
+{% macro nodo(n) -%}
+    {% if n.clase is defined %}
+        <span class="badge text-bg-{{ colores[n.clase] }}">{{ etiquetas[n.clase] }}</span>
+        <span class="text-muted small">{{ n.conteos[n.clase] }} de {{ n.muestras }} muestras</span>
+    {% else %}
+        <div class="fw-semibold">
+            ¿{{ nombres[n.caracteristica] }} ≤ {{ valor_texto(n.caracteristica, n.umbral) }}?
+        </div>
+
+        <ul class="list-unstyled ms-3 ps-3 border-start mb-0">
+            <li class="mt-2">
+                <span class="badge text-bg-light me-1">Sí</span>
+                {{ nodo(n.izquierda) }}
+            </li>
+            <li class="mt-2">
+                <span class="badge text-bg-light me-1">No</span>
+                {{ nodo(n.derecha) }}
+            </li>
+        </ul>
+    {% endif %}
+{%- endmacro %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Árbol de decisión del sensor
+        </h1>
+
+        <p class="page-description">
+            Cómo decide el sistema si un sensor está normal, necesita calibración o necesita mantenimiento.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('sensores.index') }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-arrow-left me-1"></i>
+        Sensores
+    </a>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4">
+
+        <h5 class="mb-3">
+            Qué hace y con qué datos
+        </h5>
+
+        <p>
+            Un árbol de decisión es una serie de preguntas de sí o no sobre las lecturas de una operación,
+            que termina en una decisión. Para cada operación se calculan seis características del sensor
+            (variación entre lecturas, lecturas repetidas, lecturas faltantes, valores imposibles, mayor salto y
+            días desde la última calibración) y se recorre el árbol.
+        </p>
+
+        <p>
+            Distingue las fallas del <strong>sensor</strong> de las del <strong>proceso</strong>: si la temperatura
+            se desvía pero el sensor se comporta bien (por ejemplo, una deriva del proceso), el diagnóstico es
+            normal, y el problema lo muestra la carta de control SPC.
+        </p>
+
+        <div class="alert alert-warning mb-0">
+            <div class="fw-semibold mb-1">Límites del modelo</div>
+            <ul class="mb-0">
+                <li>Como no hay un sensor real, se entrenó con {{ metricas.muestras_entrenamiento + metricas.muestras_prueba }}
+                    operaciones <strong>simuladas</strong> de sensores sanos y averiados. Demuestra el método, no
+                    una capacidad comprobada de predecir fallas reales.</li>
+                <li>La calibración se considera vigente hasta {{ metricas.supuestos.calibracion_vigente_dias }} días:
+                    es un supuesto, no un dato del fabricante.</li>
+                <li>Un valor fuera del rango físico es el que queda fuera de
+                    {{ metricas.supuestos.rango_fisico[0]|int }}–{{ metricas.supuestos.rango_fisico[1]|int }} °C.</li>
+            </ul>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+
+        <div class="app-card h-100">
+
+            <div class="p-4 border-bottom">
+                <h5 class="mb-1">Resultados</h5>
+                <p class="text-muted mb-0">
+                    {{ metricas.muestras_entrenamiento }} operaciones para entrenar y {{ metricas.muestras_prueba }}
+                    reservadas para probar.
+                </p>
+            </div>
+
+            <div class="p-4">
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <div class="text-muted small">Exactitud en el entrenamiento</div>
+                        <div class="fw-semibold fs-4">{{ "{:.1f} %".format(metricas.exactitud_entrenamiento * 100) }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Exactitud en la prueba</div>
+                        <div class="fw-semibold fs-4">{{ "{:.1f} %".format(metricas.exactitud_prueba * 100) }}</div>
+                    </div>
+                </div>
+
+                <h6 class="mb-2">Matriz de confusión (prueba)</h6>
+
+                <div class="table-responsive">
+
+                    <table class="table table-sm align-middle text-center mb-1">
+
+                        <thead>
+                            <tr>
+                                <th class="text-start">Real \ Predicho</th>
+                                {% for c in metricas.clases %}
+                                <th>{{ etiquetas[c] }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for fila in metricas.matriz_confusion %}
+                            {% set i = loop.index0 %}
+                            <tr>
+                                <th class="text-start">{{ etiquetas[metricas.clases[i]] }}</th>
+                                {% for valor in fila %}
+                                <td class="{{ 'fw-semibold bg-success-subtle' if loop.index0 == i else '' }}">{{ valor }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <div class="text-muted small">
+                    La diagonal son los aciertos. Los errores más comunes recomiendan mantenimiento cuando bastaba
+                    con calibrar: es el error más prudente.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-6">
+
+        <div class="app-card h-100">
+
+            <div class="p-4 border-bottom">
+                <h5 class="mb-1">Qué características pesan más</h5>
+                <p class="text-muted mb-0">Cuánto reduce cada una la confusión del árbol al decidir.</p>
+            </div>
+
+            <div class="p-4">
+
+                {% for clave, nombre, unidad in caracteristicas %}
+
+                {% set valor = metricas.importancia[clave] %}
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ nombre }}</span>
+                        <span class="fw-semibold">{{ "{:.1f} %".format(valor * 100) }}</span>
+                    </div>
+
+                    <progress class="w-100" value="{{ '%.1f'|format(valor * 100) }}" max="100"></progress>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">El árbol</h5>
+        <p class="text-muted mb-0">Se lee de arriba hacia abajo. Cada hoja muestra la decisión y cuántas muestras de entrenamiento llegaron a ella.</p>
+    </div>
+
+    <div class="p-4">
+        {{ nodo(arbol) }}
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Las mismas decisiones como reglas</h5>
+        <p class="text-muted mb-0">Una regla por cada hoja del árbol.</p>
+    </div>
+
+    <div class="p-4">
+
+        <ol class="mb-0">
+            {% for r in reglas %}
+            <li class="mb-2">{{ r }}</li>
+            {% endfor %}
+        </ol>
+
+    </div>
+
+</div>
+
+{% endblock %}

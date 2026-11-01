@@ -149,6 +149,14 @@ Ejecuciones de producción | Manufactura
                     <td class="text-end">
 
                         <a
+                            href="{{ url_for('planta.operaciones', produccion_id=e.id_produccion) }}"
+                            class="btn btn-sm btn-outline-primary"
+                        >
+                            <i class="bi bi-list-check me-1"></i>
+                            Operaciones
+                        </a>
+
+                        <a
                             href="{{ url_for('produccion.orden_detalle', orden_id=e.ordenp_id) }}"
                             class="btn btn-sm btn-light"
                             title="Ver orden"

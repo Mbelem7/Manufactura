@@ -88,19 +88,21 @@ def _proveedor_activo(proveedor_id):
     return prov
 
 
-def _obtener_o_crear_lote(codigo, producto_id):
-    # Si la linea trae codigo de lote: usa el existente o lo crea
-    if not codigo:
+def _fecha(texto):
+    # Texto AAAA-MM-DD -> date; vacio -> None; invalido -> ValueError
+    texto = (texto or "").strip()
+    return datetime.strptime(texto, "%Y-%m-%d").date() if texto else None
+
+
+def _crear_lote(linea, fecha):
+    # Si la linea trae codigo de lote se crea un lote nuevo (el codigo no puede existir)
+    if not linea["lote_codigo"]:
         return None
 
-    existente = lote.obtener_lote_por_codigo(codigo)
-    if existente is not None:
-        if existente.producto_id != producto_id:
-            raise ValueError("El lote " + codigo + " pertenece a otro producto")
-        return existente.id_lote
-
-    ahora = datetime.now()
-    return lote.insertar_lote(codigo, ahora, ahora, producto_id)
+    return lote.crear_lote_nuevo(
+        linea["lote_codigo"], linea["producto_id"], linea["cantidad"],
+        linea["fecha_vencimiento"], fecha
+    )
 
 
 # ÓRDENES DE COMPRA
@@ -406,7 +408,8 @@ def recepciones():
 
 @compras_bp.route("/recepciones/nueva", methods=["GET", "POST"])
 def recepcion_nueva():
-    # Form: ordenc_id, almacen_id, codigo + lineas (producto_id, lote_codigo, cantidad repetidos)
+    # Form: ordenc_id, almacen_id, codigo + lineas (producto_id, lote_codigo, fecha_vencimiento,
+    # cantidad repetidos)
     # Al guardar: se crea la recepcion, se suma al inventario y la orden pasa a "recibida"
     if request.method == "POST":
         ordenc_id = request.form.get("ordenc_id", type=int)
@@ -421,9 +424,10 @@ def recepcion_nueva():
                 {
                     "producto_id": int(l["producto_id"]),
                     "lote_codigo": l["lote_codigo"] or None,
+                    "fecha_vencimiento": _fecha(l["fecha_vencimiento"]),
                     "cantidad": Decimal(l["cantidad"])
                 }
-                for l in _lineas_form(["producto_id", "lote_codigo", "cantidad"])
+                for l in _lineas_form(["producto_id", "lote_codigo", "fecha_vencimiento", "cantidad"])
             ]
         except (ValueError, ArithmeticError):
             lineas = []
@@ -440,17 +444,19 @@ def recepcion_nueva():
             flash("Agregue al menos un producto con cantidad válida", "error")
         else:
             try:
+                # Los lotes se crean sin commit: se guardan junto con la recepcion o no se guardan
+                ahora = datetime.now()
                 detalles = [
                     {
                         "producto_id": l["producto_id"],
-                        "lote_id": _obtener_o_crear_lote(l["lote_codigo"], l["producto_id"]),
+                        "lote_id": _crear_lote(l, ahora),
                         "cantidad": l["cantidad"]
                     }
                     for l in lineas
                 ]
                 recepcion_id = transacciones.registrar_recepcion(
                     ordenc_id, almacen_id, codigo, detalles,
-                    datetime.now(), ACTIVO, OC_RECIBIDA
+                    ahora, ACTIVO, OC_RECIBIDA
                 )
             except (ValueError, IntegrityError) as e:
                 flash("No se pudo registrar la recepción: " + str(e), "error")

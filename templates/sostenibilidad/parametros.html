@@ -1,0 +1,390 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Parámetros de sostenibilidad | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Parámetros de sostenibilidad
+        </h1>
+
+        <p class="page-description">
+            Datos que alimentan el cálculo de energía y huella de carbono.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('sostenibilidad.resumen') }}"
+        class="btn btn-light"
+    >
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver
+    </a>
+
+</div>
+
+
+{# ---------- FACTORES DE EMISION ---------- #}
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Factores de emisión</h5>
+        <p class="text-muted mb-0">
+            Para cada categoría se usa el factor más reciente. Todo factor debe citar su fuente.
+        </p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Concepto</th>
+                    <th class="text-end">Valor</th>
+                    <th>Unidad</th>
+                    <th>Año</th>
+                    <th>Fuente</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in factores %}
+
+                <tr>
+                    <td>{{ 'Electricidad' if f.categoria == 'electricidad' else 'Transporte' }}</td>
+                    <td>{{ f.concepto }}</td>
+                    <td class="text-end fw-semibold">{{ f.valor }}</td>
+                    <td>{{ f.unidad }}</td>
+                    <td>{{ f.anio }}</td>
+                    <td class="small">{{ f.fuente }}</td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        Todavía no hay factores registrados.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <div class="p-4 border-top">
+
+        <h6 class="mb-3">Agregar un factor</h6>
+
+        <form method="POST" action="{{ url_for('sostenibilidad.factor_nuevo') }}">
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+                    <label for="categoria" class="form-label">Categoría</label>
+                    <select id="categoria" name="categoria" class="form-select" required>
+                        <option value="">Seleccione</option>
+                        {% for clave, nombre in categorias.items() %}
+                        <option value="{{ clave }}">{{ nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-5">
+                    <label for="concepto" class="form-label">Concepto</label>
+                    <input type="text" id="concepto" name="concepto" class="form-control" placeholder="Ej. Red eléctrica de Nicaragua" required>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="valor" class="form-label">Valor</label>
+                    <input type="number" id="valor" name="valor" class="form-control" min="0" step="any" required>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="anio" class="form-label">Año</label>
+                    <input type="number" id="anio" name="anio" class="form-control" min="1990" max="2100" step="1" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="unidad" class="form-label">Unidad</label>
+                    <input type="text" id="unidad" name="unidad" class="form-control" placeholder="Ej. kg CO2e/kWh" required>
+                </div>
+
+                <div class="col-md-8">
+                    <label for="fuente" class="form-label">Fuente</label>
+                    <input type="text" id="fuente" name="fuente" class="form-control" placeholder="Institución, documento y enlace" required>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>
+                        Agregar factor
+                    </button>
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+{# ---------- POTENCIA DE LOS CENTROS DE TRABAJO ---------- #}
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Potencia de los equipos</h5>
+        <p class="text-muted mb-0">
+            Potencia promedio en kW de la máquina de cada centro de trabajo (la que figura en su placa o en su manual).
+        </p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Centro de trabajo</th>
+                    <th>Máquina</th>
+                    <th style="width: 200px;">Potencia (kW)</th>
+                    <th class="text-end">Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for c in centros %}
+
+                <tr>
+                    <td>{{ c.codigo }} — {{ c.nombre }}</td>
+                    <td>{{ c.maquina or '—' }}</td>
+                    <td>
+                        <input
+                            form="centro-{{ c.id_centro }}"
+                            type="number"
+                            name="potencia_kw"
+                            class="form-control form-control-sm"
+                            min="0"
+                            step="any"
+                            value="{{ c.potencia_kw if c.potencia_kw is not none else '' }}"
+                            placeholder="sin dato"
+                            required
+                        >
+                    </td>
+                    <td class="text-end">
+                        <form
+                            id="centro-{{ c.id_centro }}"
+                            method="POST"
+                            action="{{ url_for('sostenibilidad.centro_potencia', centro_id=c.id_centro) }}"
+                        >
+                            <button type="submit" class="btn btn-sm btn-light" title="Guardar">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No hay centros de trabajo activos.</td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+{# ---------- PESO DE LOS PRODUCTOS ---------- #}
+<div class="app-card mb-4">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Peso de los productos terminados</h5>
+        <p class="text-muted mb-0">Peso en kg de una unidad ya envasada (contenido más envase). Se usa para el transporte.</p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Unidad</th>
+                    <th style="width: 200px;">Peso por unidad (kg)</th>
+                    <th class="text-end">Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for p in productos %}
+
+                <tr>
+                    <td>{{ p.codigo }} — {{ p.nombre }}</td>
+                    <td>{{ p.unidad_medida }}</td>
+                    <td>
+                        <input
+                            form="producto-{{ p.id_producto }}"
+                            type="number"
+                            name="peso_kg"
+                            class="form-control form-control-sm"
+                            min="0"
+                            step="any"
+                            value="{{ p.peso_kg if p.peso_kg is not none else '' }}"
+                            placeholder="sin dato"
+                            required
+                        >
+                    </td>
+                    <td class="text-end">
+                        <form
+                            id="producto-{{ p.id_producto }}"
+                            method="POST"
+                            action="{{ url_for('sostenibilidad.producto_peso', producto_id=p.id_producto) }}"
+                        >
+                            <button type="submit" class="btn btn-sm btn-light" title="Guardar">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No hay productos terminados activos.</td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+{# ---------- TRANSPORTE DE LOS DESPACHOS ---------- #}
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Transporte de los despachos</h5>
+        <p class="text-muted mb-0">
+            Distancia recorrida hasta el cliente y tipo de vehículo. Si no se elige factor, se usa el de transporte más reciente.
+        </p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Despacho</th>
+                    <th>Orden de venta</th>
+                    <th style="width: 140px;">Distancia (km)</th>
+                    <th style="width: 200px;">Vehículo</th>
+                    <th style="width: 260px;">Factor de transporte</th>
+                    <th class="text-end">Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for d in despachos %}
+
+                <tr>
+                    <td class="fw-semibold">{{ d.codigo }}</td>
+                    <td>#{{ d.id_ordenv }}</td>
+                    <td>
+                        <input
+                            form="despacho-{{ d.id_despacho }}"
+                            type="number"
+                            name="distancia_km"
+                            class="form-control form-control-sm"
+                            min="0"
+                            step="any"
+                            value="{{ d.distancia_km if d.distancia_km is not none else '' }}"
+                            placeholder="sin dato"
+                            required
+                        >
+                    </td>
+                    <td>
+                        <input
+                            form="despacho-{{ d.id_despacho }}"
+                            type="text"
+                            name="vehiculo"
+                            class="form-control form-control-sm"
+                            value="{{ d.vehiculo or '' }}"
+                            placeholder="Ej. Camión"
+                        >
+                    </td>
+                    <td>
+                        <select
+                            form="despacho-{{ d.id_despacho }}"
+                            name="factor_id"
+                            class="form-select form-select-sm"
+                        >
+                            <option value="">Usar el más reciente</option>
+                            {% for f in factores_transporte %}
+                            <option
+                                value="{{ f.id_factor }}"
+                                {{ 'selected' if d.factor_transporte_id == f.id_factor }}
+                            >
+                                {{ f.concepto }} ({{ f.valor }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td class="text-end">
+                        <form
+                            id="despacho-{{ d.id_despacho }}"
+                            method="POST"
+                            action="{{ url_for('sostenibilidad.despacho_transporte', despacho_id=d.id_despacho) }}"
+                        >
+                            <button type="submit" class="btn btn-sm btn-light" title="Guardar">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Todavía no hay despachos registrados.</td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

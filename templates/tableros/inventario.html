@@ -1,0 +1,108 @@
+{% extends "layouts/base.html" %}
+{% from "tableros/_macros.html" import kpi, grafico, filtro %}
+
+{% block title %}
+Tablero de inventario | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Tablero de inventario
+        </h1>
+
+        <p class="page-description">
+            Existencias actuales, cobertura de materia prima, lotes y rotación del producto terminado.
+        </p>
+    </div>
+
+</div>
+
+{{ filtro(inicio, fin) }}
+
+<div class="alert alert-info">
+    Las existencias son las actuales. El período solo afecta a las unidades despachadas que se usan
+    para calcular la rotación.
+</div>
+
+<div class="row g-3 mb-4">
+
+    {{ kpi('Productos con existencia', kpis.productos_con_existencia) }}
+    {{ kpi('Lotes con existencia', kpis.lotes_con_existencia) }}
+    {{ kpi('Capacidad de producción', ("{:,.0f} botellas".format(kpis.capacidad)) if kpis.capacidad is not none else '—',
+           ('Limita: ' ~ kpis.limitante) if kpis.limitante else 'Con el stock actual de materia prima') }}
+    {{ kpi('Rotación del producto terminado',
+           ("{:,.2f} veces".format(kpis.rotacion)) if kpis.rotacion is not none else '—',
+           "{:,.0f}".format(kpis.despachadas) ~ ' despachadas / ' ~ "{:,.0f}".format(kpis.stock_pt) ~ ' en existencia') }}
+
+</div>
+
+<div class="row g-4 mb-4">
+
+    {{ grafico('grafCobertura', 'Cobertura de materia prima',
+               'Lotes de producción de ' ~ lote_botellas ~ ' botellas que cubre el stock de cada material. El más bajo limita la producción.',
+               12, 300) }}
+    {{ grafico('grafTerminados', 'Existencia de producto terminado') }}
+    {{ grafico('grafAlmacenes', 'Productos y lotes por almacén') }}
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="p-4 border-bottom">
+        <h5 class="mb-1">Lotes con existencia más antiguos</h5>
+        <p class="text-muted mb-0">Los primeros que conviene usar o despachar (primero en entrar, primero en salir).</p>
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Lote</th>
+                    <th>Producto</th>
+                    <th>Creado</th>
+                    <th class="text-end">Existencia</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for l in antiguos %}
+
+                <tr>
+                    <td class="fw-semibold">{{ l.lote }}</td>
+                    <td>{{ l.producto_codigo }} — {{ l.producto_nombre }}</td>
+                    <td>{{ l.fecha_creacion.strftime('%d/%m/%Y') if l.fecha_creacion }}</td>
+                    <td class="text-end">{{ "{:,.2f}".format(l.existencia) }} {{ l.unidad_medida }}</td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        No hay lotes con existencia.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{% include "tableros/_graficos.html" %}
+{% endblock %}

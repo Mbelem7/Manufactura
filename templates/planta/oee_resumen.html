@@ -1,0 +1,163 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+OEE | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{% macro color(valor) -%}
+    {%- if valor is none -%}secondary
+    {%- elif valor >= 0.85 -%}success
+    {%- elif valor >= 0.60 -%}warning
+    {%- else -%}danger{%- endif -%}
+{%- endmacro %}
+
+{% macro pct(valor) -%}
+    {{ "{:.1f} %".format(valor * 100) if valor is not none else '—' }}
+{%- endmacro %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Eficiencia general de los equipos (OEE)
+        </h1>
+
+        <p class="page-description">
+            Disponibilidad × rendimiento × calidad de cada ejecución de producción.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="row g-3 mb-4">
+
+    {% for etiqueta, clave in [('Disponibilidad promedio', 'disponibilidad'), ('Rendimiento promedio', 'rendimiento'), ('Calidad promedio', 'calidad'), ('OEE promedio', 'oee')] %}
+
+    <div class="col-md-3 col-6">
+
+        <div class="app-card h-100">
+            <div class="p-3">
+                <div class="text-muted small mb-1">
+                    {{ etiqueta }}
+                </div>
+
+                <div class="fw-semibold fs-3 text-{{ color(promedios[clave]) }}">
+                    {{ pct(promedios[clave]) }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<p class="text-muted small mb-4">
+    Promedio de {{ promedios.cantidad }} {{ 'ejecución terminada' if promedios.cantidad == 1 else 'ejecuciones terminadas' }}.
+    Referencia de clase mundial: OEE de 85 % o más. El reposo de 24 horas no entra en el cálculo.
+</p>
+
+
+<div class="app-card">
+
+    <div class="table-responsive">
+
+        <table class="table align-middle mb-0">
+
+            <thead>
+                <tr>
+                    <th>Ejecución</th>
+                    <th>Orden</th>
+                    <th>Producto</th>
+                    <th class="text-end">Disponibilidad</th>
+                    <th class="text-end">Rendimiento</th>
+                    <th class="text-end">Calidad</th>
+                    <th class="text-end">OEE</th>
+
+                    <th class="text-end">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for f in filas %}
+
+                {% set e = f.ejecucion %}
+                {% set c = f.calculo %}
+
+                <tr>
+
+                    <td class="fw-semibold">#{{ e.id_produccion }}</td>
+
+                    <td>
+                        <a
+                            href="{{ url_for('produccion.orden_detalle', orden_id=e.ordenp_id) }}"
+                            class="text-decoration-none"
+                        >
+                            #{{ e.ordenp_id }}
+                        </a>
+                    </td>
+
+                    <td>{{ e.producto_nombre }}</td>
+
+                    <td class="text-end">{{ pct(c.disponibilidad) }}</td>
+
+                    <td class="text-end">{{ pct(c.rendimiento) }}</td>
+
+                    <td class="text-end">{{ pct(c.calidad) }}</td>
+
+                    <td class="text-end">
+                        <span class="badge text-bg-{{ color(c.oee) }}">
+                            {{ pct(c.oee) }}
+                        </span>
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for('planta.oee_detalle', produccion_id=e.id_produccion) }}"
+                            class="btn btn-sm btn-light"
+                            title="Ver detalle"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="8">
+
+                        <div class="text-center py-5 text-muted">
+
+                            <i class="bi bi-speedometer2 fs-2 d-block mb-2"></i>
+
+                            Todavía no hay ejecuciones de producción registradas.
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

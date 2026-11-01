@@ -1,0 +1,49 @@
+{% extends "layouts/base.html" %}
+{% from "tableros/_macros.html" import kpi, grafico, filtro, pct, dinero %}
+
+{% block title %}
+Tablero de ventas | Manufactura
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1 class="page-title">
+            Tablero de ventas
+        </h1>
+
+        <p class="page-description">
+            Ventas, clientes, productos más vendidos y cumplimiento de los despachos.
+        </p>
+    </div>
+
+</div>
+
+{{ filtro(inicio, fin) }}
+
+<div class="row g-3 mb-4">
+
+    {{ kpi('Ventas totales', dinero(kpis.total), 'Sin órdenes canceladas') }}
+    {{ kpi('Órdenes de venta', kpis.ordenes) }}
+    {{ kpi('Ticket promedio', dinero(kpis.ticket)) }}
+    {{ kpi('Unidades despachadas', "{:,.0f}".format(kpis.unidades_despachadas), pct(kpis.cumplimiento) ~ ' de las órdenes despachadas') }}
+
+</div>
+
+<div class="row g-4">
+
+    {{ grafico('grafMeses', 'Ventas por mes') }}
+    {{ grafico('grafEstados', 'Órdenes por estado') }}
+    {{ grafico('grafProductos', 'Productos más vendidos', 'Por monto.') }}
+    {{ grafico('grafClientes', 'Clientes con más compras', 'Por monto.') }}
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{% include "tableros/_graficos.html" %}
+{% endblock %}

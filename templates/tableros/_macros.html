@@ -1,0 +1,81 @@
+{# Piezas compartidas por los tableros #}
+
+{% macro kpi(etiqueta, valor, nota=none, color=none) -%}
+<div class="col-md-3 col-6">
+    <div class="app-card h-100">
+        <div class="p-3">
+            <div class="text-muted small mb-1">{{ etiqueta }}</div>
+            <div class="fw-semibold fs-4{{ ' text-' ~ color if color }}">{{ valor }}</div>
+            {% if nota %}
+            <div class="text-muted small">{{ nota }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{%- endmacro %}
+
+
+{% macro grafico(id_canvas, titulo, descripcion=none, ancho=6, alto=280) -%}
+<div class="col-lg-{{ ancho }}">
+    <div class="app-card h-100">
+
+        <div class="p-4 border-bottom">
+            <h5 class="mb-1">{{ titulo }}</h5>
+            {% if descripcion %}
+            <p class="text-muted mb-0">{{ descripcion }}</p>
+            {% endif %}
+        </div>
+
+        <div class="p-4">
+            <div data-alto="{{ alto }}">
+                <canvas id="{{ id_canvas }}"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+{%- endmacro %}
+
+
+{% macro filtro(inicio, fin) -%}
+<div class="app-card mb-4 no-print">
+    <div class="p-3">
+
+        <form method="GET" class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+                <label for="inicio" class="form-label">Desde</label>
+                <input type="date" id="inicio" name="inicio" class="form-control" value="{{ inicio or '' }}">
+            </div>
+
+            <div class="col-md-4">
+                <label for="fin" class="form-label">Hasta</label>
+                <input type="date" id="fin" name="fin" class="form-control" value="{{ fin or '' }}">
+            </div>
+
+            <div class="col-md-4 d-grid">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel me-1"></i>
+                    Aplicar período
+                </button>
+            </div>
+
+        </form>
+
+        <div class="text-muted small mt-2">
+            Sin fechas, el tablero muestra todo el historial.
+        </div>
+
+    </div>
+</div>
+{%- endmacro %}
+
+
+{% macro pct(valor) -%}
+    {{ "{:.1f} %".format(valor * 100) if valor is not none else '—' }}
+{%- endmacro %}
+
+
+{% macro dinero(valor) -%}
+    {{ "C$ {:,.2f}".format(valor) if valor is not none else '—' }}
+{%- endmacro %}

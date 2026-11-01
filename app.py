@@ -83,6 +83,11 @@ from modulos.produccion import *
 from routes.dashboard import dashboard_bp
 from routes.inventario import inventario_bp
 from routes.produccion import produccion_bp
+from routes.calidad import calidad_bp
+from routes.planta import planta_bp
+from routes.sostenibilidad import sostenibilidad_bp
+from routes.tableros import tableros_bp
+from routes.sensores import sensores_bp
 from routes.compras import compras_bp
 from routes.ventas import ventas_bp
 from routes.configuracion import configuracion_bp
@@ -92,6 +97,11 @@ from modulos.autorizacion import verificar_acceso
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(inventario_bp)
 app.register_blueprint(produccion_bp)
+app.register_blueprint(calidad_bp)
+app.register_blueprint(planta_bp)
+app.register_blueprint(sostenibilidad_bp)
+app.register_blueprint(tableros_bp)
+app.register_blueprint(sensores_bp)
 app.register_blueprint(compras_bp)
 app.register_blueprint(ventas_bp)
 app.register_blueprint(configuracion_bp)
