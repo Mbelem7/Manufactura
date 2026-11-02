@@ -1,12 +1,196 @@
 {% extends "layouts/base.html" %}
 
 {% block title %}
-Dashboard | Manufactura
+Inicio | Manufactura
+{% endblock %}
+
+{% block content %}
+
+{# Accesos de la pagina principal: (destino, icono, titulo, descripcion) #}
+{% set tableros = [
+    ('tableros.produccion_rubro', 'bi-bar-chart-line', 'Producción', 'OEE, paradas, calidad y alertas.'),
+    ('tableros.ventas_rubro', 'bi-graph-up-arrow', 'Ventas', 'Ventas, clientes y productos más vendidos.'),
+    ('tableros.compras_rubro', 'bi-bag', 'Compras', 'Gasto, proveedores y tiempos de recepción.'),
+    ('tableros.inventario_rubro', 'bi-archive', 'Inventario', 'Existencias, cobertura y rotación.')
+] %}
+
+{% set accesos = [
+    ('compras.ordenes', 'bi-cart', 'Órdenes de compra', 'Pide materia prima a tus proveedores.'),
+    ('inventario.existencias', 'bi-boxes', 'Existencias', 'Stock por producto, lote y almacén.'),
+    ('produccion.ordenes', 'bi-clipboard-check', 'Órdenes de producción', 'Planifica lo que se va a fabricar.'),
+    ('produccion.ejecuciones', 'bi-play-circle', 'Ejecuciones', 'Operaciones, paradas y sensor.'),
+    ('calidad.controles', 'bi-patch-check', 'Control de calidad', 'Revisa y libera cada lote.'),
+    ('ventas.ordenes', 'bi-receipt', 'Órdenes de venta', 'Registra pedidos y despachos.')
+] %}
+
+
+<section class="inicio-hero">
+
+    <p class="inicio-saludo">
+        Bienvenido a
+    </p>
+
+    <h1 class="inicio-titulo">
+        INTEGRA - ERP
+    </h1>
+
+    <p class="inicio-descripcion">
+        Plataforma para la administración y el seguimiento de compras, inventario,
+        producción y ventas.
+    </p>
+
+</section>
+
+
+<h5 class="inicio-seccion">
+    Tableros
+</h5>
+
+<div class="row g-3 mb-4">
+
+    {% for destino, icono, titulo, descripcion in tableros %}
+
+    <div class="col-xl-3 col-md-6">
+
+        <a
+            href="{{ url_for(destino) }}"
+            class="app-card inicio-acceso"
+        >
+
+            <span class="inicio-icono">
+                <i class="bi {{ icono }}"></i>
+            </span>
+
+            <span class="inicio-acceso-texto">
+                <span class="inicio-acceso-titulo">{{ titulo }}</span>
+                <span class="inicio-acceso-descripcion">{{ descripcion }}</span>
+            </span>
+
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+
+<h5 class="inicio-seccion">
+    Accesos rápidos
+</h5>
+
+<div class="row g-3">
+
+    {% for destino, icono, titulo, descripcion in accesos %}
+
+    <div class="col-xl-4 col-md-6">
+
+        <a
+            href="{{ url_for(destino) }}"
+            class="app-card inicio-acceso"
+        >
+
+            <span class="inicio-icono">
+                <i class="bi {{ icono }}"></i>
+            </span>
+
+            <span class="inicio-acceso-texto">
+                <span class="inicio-acceso-titulo">{{ titulo }}</span>
+                <span class="inicio-acceso-descripcion">{{ descripcion }}</span>
+            </span>
+
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
 {% endblock %}
 
 
-{% block content %}
-<h3 class="text-2xl font-bold mb-4">BIENVENDO a:</h3>
-<h1 class="text-2xl font-bold mb-4">INTEGRA - ERP</h1>
+{% block scripts %}
+<style>
+    .inicio-hero {
+        padding: 1.5rem 0 2rem;
+    }
 
+    .inicio-saludo {
+        margin: 0 0 0.25rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6c757d;
+    }
+
+    .inicio-titulo {
+        margin: 0 0 0.75rem;
+        font-size: 2.75rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .inicio-descripcion {
+        max-width: 38rem;
+        margin: 0;
+        font-size: 1.05rem;
+        color: #6c757d;
+    }
+
+    .inicio-seccion {
+        margin: 0 0 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6c757d;
+    }
+
+    .inicio-acceso {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        height: 100%;
+        padding: 1rem 1.25rem;
+        color: inherit;
+        text-decoration: none;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .inicio-acceso:hover {
+        color: inherit;
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+    }
+
+    .inicio-icono {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.75rem;
+        font-size: 1.25rem;
+        background: #f1e8ee;
+        color: #744a62;
+    }
+
+    .inicio-acceso-texto {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .inicio-acceso-titulo {
+        font-weight: 600;
+    }
+
+    .inicio-acceso-descripcion {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+</style>
 {% endblock %}
