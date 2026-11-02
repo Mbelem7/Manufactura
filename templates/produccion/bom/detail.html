@@ -4,6 +4,143 @@
 Detalle BOM | Manufactura
 {% endblock %}
 
+{# Tabla con los materiales de una etapa (o de los que aun no tienen etapa) #}
+{% macro tabla_etapa(grupo, editable, etapas) %}
+
+<div class="table-responsive">
+
+    <table class="table align-middle mb-0">
+
+        <thead>
+            <tr>
+                <th>Producto / Material</th>
+                <th>Código</th>
+                <th>Cantidad</th>
+                <th>Unidad</th>
+
+                {% if editable %}
+                <th>Etapa</th>
+                <th class="text-end">Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for c in grupo %}
+
+            <tr>
+
+                <td>{{ c.producto_nombre }}</td>
+
+                <td>{{ c.producto_codigo }}</td>
+
+                {% if editable %}
+
+                <td style="width: 18%;">
+                    <input
+                        form="actualizar-{{ c.id_detalle_bom }}"
+                        type="number"
+                        name="cantidad"
+                        class="form-control form-control-sm"
+                        min="0.01"
+                        step="0.01"
+                        value="{{ '%.2f'|format(c.cantidad) }}"
+                        required
+                    >
+                </td>
+
+                {% else %}
+
+                <td>{{ "{:,.2f}".format(c.cantidad) }}</td>
+
+                {% endif %}
+
+                <td>{{ c.producto_unidad_medida }}</td>
+
+                {% if editable %}
+
+                <td style="width: 20%;">
+                    <select
+                        form="actualizar-{{ c.id_detalle_bom }}"
+                        name="etapa"
+                        class="form-select form-select-sm"
+                    >
+                        {% if not c.etapa %}
+                        <option value="" selected>Elegir etapa</option>
+                        {% endif %}
+
+                        {% for clave, nombre in etapas.items() %}
+                        <option value="{{ clave }}" {{ 'selected' if c.etapa == clave }}>
+                            {{ nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
+
+                <td class="text-end text-nowrap">
+
+                    <form
+                        id="actualizar-{{ c.id_detalle_bom }}"
+                        method="POST"
+                        action="{{ url_for('produccion.bom_componente_actualizar', detalle_id=c.id_detalle_bom) }}"
+                        class="d-inline"
+                    >
+                        <button
+                            type="submit"
+                            class="btn btn-sm btn-light"
+                            title="Guardar cambios"
+                        >
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                    </form>
+
+                    <form
+                        method="POST"
+                        action="{{ url_for('produccion.bom_componente_eliminar', detalle_id=c.id_detalle_bom) }}"
+                        class="d-inline"
+                        onsubmit="return confirm('¿Eliminar este componente?');"
+                    >
+                        <button
+                            type="submit"
+                            class="btn btn-sm btn-light text-danger"
+                            title="Eliminar"
+                        >
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+
+                </td>
+
+                {% endif %}
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+
+                <td colspan="{{ 6 if editable else 4 }}">
+
+                    <div class="text-center py-4 text-muted">
+                        Esta etapa aún no tiene materiales.
+                    </div>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endmacro %}
+
+
 {% block content %}
 
 {# Mientras la BOM este activa se pueden editar sus componentes #}
@@ -148,16 +285,17 @@ Detalle BOM | Manufactura
 
                     <div>
                         <h5 class="mb-1">
-                            Componentes
+                            Receta por etapas
                         </h5>
 
                         <p class="text-muted mb-0">
-                            Materiales requeridos para fabricar una unidad del producto.
+                            Materiales para fabricar una unidad del producto, agrupados por etapa.
+                            Pulsa una etapa para ver sus materiales.
                         </p>
                     </div>
 
                     <span class="badge rounded-pill text-bg-light">
-                        {{ componentes|length }} {{ 'componente' if componentes|length == 1 else 'componentes' }}
+                        {{ etapas|length }} etapas · {{ componentes|length }} {{ 'componente' if componentes|length == 1 else 'componentes' }}
                     </span>
 
                 </div>
@@ -165,115 +303,87 @@ Detalle BOM | Manufactura
             </div>
 
 
-            <div class="table-responsive">
+            <div class="accordion accordion-flush" id="etapasBom">
 
-                <table class="table align-middle mb-0">
+                {% set iconos = {'mezcla': 'bi-cup-hot', 'envasado': 'bi-box-seam'} %}
 
-                    <thead>
-                        <tr>
-                            <th>Producto / Material</th>
-                            <th>Código</th>
-                            <th>Cantidad</th>
-                            <th>Unidad</th>
+                {% for clave, nombre in etapas.items() %}
 
-                            {% if editable %}
-                            <th class="text-end">Acciones</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
+                {% set grupo = componentes|selectattr('etapa', 'equalto', clave)|list %}
 
-                    <tbody>
+                <div class="accordion-item">
 
-                        {% for c in componentes %}
+                    <h2 class="accordion-header">
 
-                        <tr>
+                        <button
+                            class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#etapa-{{ clave }}"
+                            aria-expanded="false"
+                            aria-controls="etapa-{{ clave }}"
+                        >
+                            <i class="bi {{ iconos.get(clave, 'bi-list-ul') }} me-2"></i>
 
-                            <td>{{ c.producto_nombre }}</td>
+                            <span class="fw-semibold">{{ nombre }}</span>
 
-                            <td>{{ c.producto_codigo }}</td>
+                            <span class="badge rounded-pill text-bg-light ms-2">
+                                {{ grupo|length }} {{ 'material' if grupo|length == 1 else 'materiales' }}
+                            </span>
+                        </button>
 
-                            {% if editable %}
+                    </h2>
 
-                            <td style="width: 18%;">
-                                <input
-                                    form="actualizar-{{ c.id_detalle_bom }}"
-                                    type="number"
-                                    name="cantidad"
-                                    class="form-control form-control-sm"
-                                    min="0.01"
-                                    step="0.01"
-                                    value="{{ '%.2f'|format(c.cantidad) }}"
-                                    required
-                                >
-                            </td>
+                    <div
+                        id="etapa-{{ clave }}"
+                        class="accordion-collapse collapse"
+                    >
+                        {{ tabla_etapa(grupo, editable, etapas) }}
+                    </div>
 
-                            {% else %}
+                </div>
 
-                            <td>{{ "{:,.2f}".format(c.cantidad) }}</td>
+                {% endfor %}
 
-                            {% endif %}
 
-                            <td>{{ c.producto_unidad_medida }}</td>
+                {# Componentes de listas anteriores que todavia no tienen etapa #}
+                {% set sin_etapa = componentes|selectattr('etapa', 'none')|list %}
 
-                            {% if editable %}
+                {% if sin_etapa %}
 
-                            <td class="text-end text-nowrap">
+                <div class="accordion-item">
 
-                                <form
-                                    id="actualizar-{{ c.id_detalle_bom }}"
-                                    method="POST"
-                                    action="{{ url_for('produccion.bom_componente_actualizar', detalle_id=c.id_detalle_bom) }}"
-                                    class="d-inline"
-                                >
-                                    <button
-                                        type="submit"
-                                        class="btn btn-sm btn-light"
-                                        title="Guardar cambios"
-                                    >
-                                        <i class="bi bi-check-lg"></i>
-                                    </button>
-                                </form>
+                    <h2 class="accordion-header">
 
-                                <form
-                                    method="POST"
-                                    action="{{ url_for('produccion.bom_componente_eliminar', detalle_id=c.id_detalle_bom) }}"
-                                    class="d-inline"
-                                    onsubmit="return confirm('¿Eliminar este componente?');"
-                                >
-                                    <button
-                                        type="submit"
-                                        class="btn btn-sm btn-light text-danger"
-                                        title="Eliminar"
-                                    >
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                        <button
+                            class="accordion-button"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#etapa-sin"
+                            aria-expanded="true"
+                            aria-controls="etapa-sin"
+                        >
+                            <i class="bi bi-question-circle me-2"></i>
 
-                            </td>
+                            <span class="fw-semibold">Sin etapa</span>
 
-                            {% endif %}
+                            <span class="badge rounded-pill text-bg-warning ms-2">
+                                {{ sin_etapa|length }} {{ 'material' if sin_etapa|length == 1 else 'materiales' }}
+                            </span>
+                        </button>
 
-                        </tr>
+                    </h2>
 
-                        {% else %}
+                    <div
+                        id="etapa-sin"
+                        class="accordion-collapse collapse show"
+                    >
+                        {{ tabla_etapa(sin_etapa, editable, etapas) }}
+                    </div>
 
-                        <tr>
+                </div>
 
-                            <td colspan="{{ 5 if editable else 4 }}">
-
-                                <div class="text-center py-4 text-muted">
-                                    Esta lista de materiales aún no tiene componentes.
-                                </div>
-
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
+                {% endif %}
 
             </div>
 
@@ -293,7 +403,7 @@ Detalle BOM | Manufactura
 
                     <div class="row g-3 align-items-end">
 
-                        <div class="col-md-6">
+                        <div class="col-md-5">
 
                             <label
                                 for="nuevo_componente"
@@ -322,7 +432,34 @@ Detalle BOM | Manufactura
                         </div>
 
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+
+                            <label
+                                for="nueva_etapa"
+                                class="form-label"
+                            >
+                                Etapa
+                            </label>
+
+                            <select
+                                id="nueva_etapa"
+                                name="etapa"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Elegir
+                                </option>
+
+                                {% for clave, nombre in etapas.items() %}
+                                <option value="{{ clave }}">{{ nombre }}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-2">
 
                             <label
                                 for="nueva_cantidad"

@@ -156,7 +156,7 @@
                 </h5>
 
                 <p class="text-muted mb-0">
-                    Agregá los materiales requeridos para fabricar el producto.
+                    Agregá los materiales y elegí en qué etapa se usa cada uno: mezcla o envasado.
                 </p>
             </div>
 
@@ -177,11 +177,15 @@
 
                 <thead>
                     <tr>
-                        <th style="width: 55%;">
+                        <th style="width: 38%;">
                             Producto / Material
                         </th>
 
-                        <th style="width: 25%;">
+                        <th style="width: 20%;">
+                            Etapa
+                        </th>
+
+                        <th style="width: 22%;">
                             Cantidad
                         </th>
 
@@ -219,6 +223,22 @@
                                 >
                                     {{ m.codigo }} — {{ m.nombre }}
                                 </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+
+                        <td>
+                            <select
+                                name="etapa"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Elegir
+                                </option>
+
+                                {% for clave, nombre in etapas.items() %}
+                                <option value="{{ clave }}">{{ nombre }}</option>
                                 {% endfor %}
                             </select>
                         </td>

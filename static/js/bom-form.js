@@ -30,6 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
     addButton.addEventListener("click", () => {
         const row = rowTemplate.cloneNode(true);
 
+        // La fila nueva empieza en la misma etapa que la anterior: asi se cargan seguidos
+        // todos los materiales de una etapa
+        const etapas = tableBody.querySelectorAll("select[name='etapa']");
+        const ultimaEtapa = etapas.length ? etapas[etapas.length - 1].value : "";
+
+        row.querySelector("select[name='etapa']").value = ultimaEtapa;
+
         tableBody.appendChild(row);
 
         row.querySelector("select").focus();

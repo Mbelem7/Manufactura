@@ -16,7 +16,8 @@ from modulos import (
     produccion,
     transacciones,
     control_calidad,
-    ejecucion_operacion
+    ejecucion_operacion,
+    bom_etapa
 )
 # Se importa con otro nombre porque la ruta de abajo se llama "bom"
 # y pisaria el modulo si tuvieran el mismo nombre
@@ -39,6 +40,12 @@ OP_PENDIENTE = "pendiente"
 OP_EN_PROCESO = "en_proceso"
 OP_FINALIZADA = "finalizada"
 OP_CANCELADA = "cancelada"
+
+# Etapas de la receta (lista de materiales de dos niveles): cada componente pertenece a una
+ETAPAS = {
+    "mezcla": "Mezcla",
+    "envasado": "Envasado"
+}
 
 
 # ---------- AYUDAS INTERNAS ----------
@@ -74,17 +81,18 @@ def _lineas_form(campos):
 
 
 def _componentes():
-    # Campos: producto_component_id, cantidad. Devuelve None si algo es invalido
+    # Campos: producto_component_id, cantidad, etapa. Devuelve None si algo es invalido
     lineas = []
 
     try:
-        for l in _lineas_form(["producto_component_id", "cantidad"]):
+        for l in _lineas_form(["producto_component_id", "cantidad", "etapa"]):
             cantidad = _decimal_positivo(l["cantidad"])
-            if cantidad is None:
+            if cantidad is None or l["etapa"] not in ETAPAS:
                 return None
             lineas.append({
                 "producto_component_id": int(l["producto_component_id"]),
-                "cantidad": cantidad
+                "cantidad": cantidad,
+                "etapa": l["etapa"]
             })
     except ValueError:
         return None
@@ -147,7 +155,7 @@ def bom():
 
 @produccion_bp.route("/bom/nuevo", methods=["GET", "POST"])
 def bom_nuevo():
-    # Form: codigo, nombre, producto_id + componentes (producto_component_id, cantidad repetidos)
+    # Form: codigo, nombre, producto_id + componentes (producto_component_id, cantidad, etapa repetidos)
     if request.method == "POST":
         codigo = _texto("codigo")
         nombre = _texto("nombre")
@@ -161,7 +169,7 @@ def bom_nuevo():
         elif bom_db.obtener_bom_por_codigo(codigo) is not None:
             flash("Ya existe un BOM con ese código", "error")
         elif componentes is None:
-            flash("Agregue al menos un componente con cantidad válida", "error")
+            flash("Agregue al menos un componente con cantidad y etapa válidas", "error")
         else:
             ids = [c["producto_component_id"] for c in componentes]
 
@@ -177,6 +185,9 @@ def bom_nuevo():
                 except IntegrityError:
                     flash("No se pudo crear el BOM", "error")
                 else:
+                    bom_etapa.asignar_etapas(
+                        bom_id, {c["producto_component_id"]: c["etapa"] for c in componentes}
+                    )
                     flash("BOM creado", "exito")
                     return redirect(url_for("produccion.bom_detalle", bom_id=bom_id))
 
@@ -185,6 +196,7 @@ def bom_nuevo():
     return render_template(
         "produccion/bom/form.html",
         bom=None,
+        etapas=ETAPAS,
         productos_terminados=[
             p for p in producto.obtener_productos_por_estado(ACTIVO)
             if p.tipo_producto == TIPO_PRODUCTO_TERMINADO
@@ -204,7 +216,8 @@ def bom_detalle(bom_id):
         "produccion/bom/detail.html",
         bom_id=bom_id,
         bom=registro,
-        componentes=detalle_bom.obtener_detalles_bom_por_bom(bom_id),
+        componentes=bom_etapa.obtener_componentes_con_etapa(bom_id),
+        etapas=ETAPAS,
         materias_primas=[
             p for p in producto.obtener_productos_por_estado(ACTIVO)
             if p.tipo_producto == TIPO_MATERIA_PRIMA
@@ -258,12 +271,12 @@ def bom_baja(bom_id):
 
 @produccion_bp.route("/bom/<int:bom_id>/componentes", methods=["POST"])
 def bom_componente_agregar(bom_id):
-    # Form: producto_component_id, cantidad
+    # Form: producto_component_id, cantidad, etapa
     _bom_o_404(bom_id)
     componentes = _componentes()
 
     if componentes is None:
-        flash("Componente o cantidad inválidos", "error")
+        flash("Componente, cantidad o etapa inválidos", "error")
     else:
         nuevo = componentes[0]["producto_component_id"]
         existentes = {d.producto_component_id for d in detalle_bom.obtener_detalles_bom_por_bom(bom_id)}
@@ -273,7 +286,8 @@ def bom_componente_agregar(bom_id):
         elif nuevo in existentes:
             flash("Ese componente ya está en el BOM; edite su cantidad", "error")
         else:
-            detalle_bom.insertar_detalle_bom(bom_id, nuevo, componentes[0]["cantidad"])
+            id_detalle = detalle_bom.insertar_detalle_bom(bom_id, nuevo, componentes[0]["cantidad"])
+            bom_etapa.actualizar_etapa(id_detalle, componentes[0]["etapa"])
             flash("Componente agregado", "exito")
 
     return redirect(url_for("produccion.bom_detalle", bom_id=bom_id))
@@ -281,7 +295,7 @@ def bom_componente_agregar(bom_id):
 
 @produccion_bp.route("/bom/componentes/<int:detalle_id>/actualizar", methods=["POST"])
 def bom_componente_actualizar(detalle_id):
-    # Form: cantidad
+    # Form: cantidad y etapa (la etapa es opcional: si no llega, no se toca)
     detalle = detalle_bom.obtener_un_detalle_bom(detalle_id)
     if detalle is None:
         abort(404)
@@ -294,6 +308,11 @@ def bom_componente_actualizar(detalle_id):
         detalle_bom.actualizar_detalle_bom(
             detalle_id, detalle.bom_id, detalle.producto_component_id, cantidad
         )
+
+        etapa = request.form.get("etapa")
+        if etapa in ETAPAS:
+            bom_etapa.actualizar_etapa(detalle_id, etapa)
+
         flash("Componente actualizado", "exito")
 
     return redirect(url_for("produccion.bom_detalle", bom_id=detalle.bom_id))
