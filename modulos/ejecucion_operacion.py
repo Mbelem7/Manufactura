@@ -18,6 +18,7 @@ _SELECT = """
         r.codigo AS ruta_codigo,
         r.secuencia,
         r.centro_id,
+        r.tipo AS ruta_tipo,
         ct.codigo AS centro_codigo,
         ct.nombre AS centro_nombre,
         ct.maquina,

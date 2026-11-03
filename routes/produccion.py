@@ -48,6 +48,16 @@ ETAPAS = {
     "envasado": "Envasado"
 }
 
+# Tipo de cada operacion de la ruta: decide como la trata el sistema, sin depender de su codigo
+#   trabajo  - cuenta en el OEE y admite paradas
+#   espera   - reposo: no admite paradas y queda fuera del OEE
+#   calidad  - control de calidad: las operaciones siguientes exigen un lote liberado
+TIPOS_OPERACION = {
+    "trabajo": "Trabajo",
+    "espera": "Espera (reposo)",
+    "calidad": "Control de calidad"
+}
+
 
 # ---------- AYUDAS INTERNAS ----------
 
@@ -135,6 +145,25 @@ def _orden_o_404(orden_id):
         abort(404)
     return orden
 
+def _faltantes_de_materia_prima(bom_id, cantidad):
+    # Materiales de la lista de materiales cuyo stock no alcanza para fabricar esa cantidad
+    faltantes = []
+
+    if not bom_id:
+        return faltantes
+
+    for c in detalle_bom.obtener_detalles_bom_por_bom(bom_id):
+        necesaria = c.cantidad * cantidad
+        disponible = inventario.obtener_stock_de_producto(c.producto_component_id)
+
+        if disponible < necesaria:
+            faltantes.append(
+                "%s (faltan %s %s)" % (
+                    c.producto_codigo, "{:,.2f}".format(necesaria - disponible), c.producto_unidad_medida
+                )
+            )
+
+    return faltantes
 
 # BOM
 
@@ -220,6 +249,7 @@ def bom_detalle(bom_id):
         componentes=bom_etapa.obtener_componentes_con_etapa(bom_id),
         etapas=ETAPAS,
         operaciones=bom_operacion.obtener_operaciones_por_bom(bom_id),
+        tipos=TIPOS_OPERACION,
         centros=centro_trabajo.obtener_centros_trabajo_por_estado(ACTIVO),
         materias_primas=[
             p for p in producto.obtener_productos_por_estado(ACTIVO)
@@ -342,11 +372,16 @@ def _datos_operacion_bom(bom_id, operacion_id=None):
     tiempo = _decimal_positivo(request.form.get("tiempo_estandar"))
     secuencia = request.form.get("secuencia", type=int)
     centro_id = request.form.get("centro_id", type=int)
+    tipo = request.form.get("tipo") or "trabajo"
 
     centro = centro_trabajo.obtener_un_centro_trabajo(centro_id) if centro_id else None
 
     if not codigo or tiempo is None or not secuencia or secuencia < 1:
         flash("Complete secuencia, código y tiempo estándar (mayor a 0)", "error")
+        return None
+
+    if tipo not in TIPOS_OPERACION:
+        flash("Tipo de operación no válido", "error")
         return None
 
     if centro is None or centro.estado != ACTIVO:
@@ -363,17 +398,22 @@ def _datos_operacion_bom(bom_id, operacion_id=None):
         flash("Ya hay una operación con esa secuencia en la ruta de este BOM", "error")
         return None
 
+    if tipo == "calidad" and any(o.tipo == "calidad" for o in otras):
+        flash("La ruta de este BOM ya tiene una operación de control de calidad", "error")
+        return None
+
     return {
         "codigo": codigo,
         "secuencia": secuencia,
         "centro_id": centro_id,
-        "tiempo_estandar": tiempo
+        "tiempo_estandar": tiempo,
+        "tipo": tipo
     }
 
 
 @produccion_bp.route("/bom/<int:bom_id>/operaciones", methods=["POST"])
 def bom_operacion_agregar(bom_id):
-    # Form: codigo, secuencia, centro_id, tiempo_estandar
+    # Form: codigo, secuencia, centro_id, tiempo_estandar, tipo
     registro = _bom_o_404(bom_id)
 
     if registro.estado != ACTIVO:
@@ -390,7 +430,7 @@ def bom_operacion_agregar(bom_id):
 
 @produccion_bp.route("/bom/operaciones/<int:operacion_id>/actualizar", methods=["POST"])
 def bom_operacion_actualizar(operacion_id):
-    # Form: codigo, secuencia, centro_id, tiempo_estandar. Las ordenes ya creadas no cambian.
+    # Form: codigo, secuencia, centro_id, tiempo_estandar, tipo. Las ordenes ya creadas no cambian.
     operacion = bom_operacion.obtener_una_operacion(operacion_id)
     if operacion is None or operacion.estado != ACTIVO:
         abort(404)
@@ -693,6 +733,9 @@ def orden_nueva():
                 flash("Orden de producción creada", "exito")
                 if copiadas == 0:
                     flash("El BOM no tiene ruta de fabricación: agréguela en su detalle para poder ejecutar la orden", "error")
+                faltantes = _faltantes_de_materia_prima(bom_id, cantidad)
+                if faltantes:
+                    flash("Aviso: no hay materia prima suficiente para esta orden: " + ", ".join(faltantes), "error")
                 return redirect(url_for("produccion.orden_detalle", orden_id=orden_id))
 
         return redirect(url_for("produccion.orden_nueva"))
@@ -852,6 +895,7 @@ def ejecucion_nueva():
         ordenp_id = request.form.get("ordenp_id", type=int)
         usuario_id = session.get("id_usuario")
         orden = orden_produccion.obtener_un_orden_produccion(ordenp_id) if ordenp_id else None
+        faltantes = _faltantes_de_materia_prima(orden.bom_id, orden.cantidad) if orden is not None else []
 
         if not usuario_id:
             flash("Debe iniciar sesión para registrar una ejecución", "error")
@@ -861,6 +905,8 @@ def ejecucion_nueva():
             flash("La orden no tiene BOM asociado", "error")
         elif any(e.ordenp_id == ordenp_id for e in produccion.obtener_produccion_en_curso()):
             flash("Esa orden ya tiene una ejecución en curso", "error")
+        elif faltantes:
+            flash("No hay materia prima suficiente para iniciar: " + ", ".join(faltantes), "error")
         else:
             transacciones.iniciar_ejecucion(ordenp_id, usuario_id, datetime.now(), OP_EN_PROCESO)
             flash("Ejecución iniciada", "exito")

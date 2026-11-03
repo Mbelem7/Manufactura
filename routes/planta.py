@@ -8,6 +8,7 @@ from modulos import (
     ruta_operacion,
     control_calidad,
     ejecucion_operacion,
+    bom_operacion,
     lectura_sensor,
     parametro_proceso,
     alerta_proceso,
@@ -31,9 +32,14 @@ EN_CURSO = "en_curso"
 TERMINADA = "terminada"
 VARIABLE = "temperatura"          # variable que mide el sensor simulado
 UNIDAD = "°C"
-OPERACION_CALIDAD = "OP-040"      # las operaciones posteriores exigen un lote liberado
-OPERACIONES_ESPERA = frozenset({"OP-030"})   # reposo: no admite paradas y queda fuera del OEE
 DURACION_DEMO_MIN = 1.0           # duracion real sugerida para cada operacion en la demostracion
+
+# Tipo de cada operacion: se elige en la ruta de fabricacion del BOM y no depende de su codigo.
+#   trabajo  - cuenta en el OEE y admite paradas
+#   espera   - reposo: no admite paradas y queda fuera del OEE
+#   calidad  - control de calidad: las operaciones posteriores exigen un lote liberado
+TIPO_ESPERA = "espera"
+TIPO_CALIDAD = "calidad"
 
 TIPOS_PARADA = {
     "falla_equipo": "Falla de equipo",
@@ -82,6 +88,11 @@ def _rutas_activas(ordenp_id):
     return sorted([r for r in rutas if r.estado == ACTIVO], key=lambda r: r.secuencia)
 
 
+def _secuencia_calidad(rutas, tipos):
+    # Secuencia de la operacion marcada como control de calidad; None si la ruta no tiene
+    return next((r.secuencia for r in rutas if tipos.get(r.id_ruta) == TIPO_CALIDAD), None)
+
+
 def _lote_liberado(ordenp_id):
     control = control_calidad.obtener_ultimo_control_por_orden(ordenp_id)
     return control is not None and control.disposicion == "liberacion"
@@ -106,7 +117,8 @@ def _calcular_oee(registro):
             "fin": e.fecha_fin,
             "factor": float(e.factor_aceleracion),
             "estandar": float(e.tiempo_estandar_min),
-            "estado": e.estado
+            "estado": e.estado,
+            "espera": e.ruta_tipo == TIPO_ESPERA
         }
         for e in ejecuciones
     ]
@@ -129,8 +141,7 @@ def _calcular_oee(registro):
         lista_paradas,
         registro.cantidad_aceptada if terminada else None,
         registro.cantidad_rechazada if terminada else None,
-        datetime.now(),
-        OPERACIONES_ESPERA
+        datetime.now()
     )
 
     return calculo, paradas, ejecuciones
@@ -150,7 +161,8 @@ def operaciones(produccion_id):
     paradas = parada.obtener_paradas_por_orden(registro.ordenp_id)
     abierta = _parada_abierta(paradas)
 
-    secuencia_calidad = next((r.secuencia for r in rutas if r.codigo == OPERACION_CALIDAD), None)
+    tipos = bom_operacion.obtener_tipos_por_orden(registro.ordenp_id)
+    secuencia_calidad = _secuencia_calidad(rutas, tipos)
     liberado = _lote_liberado(registro.ordenp_id)
 
     filas = []
@@ -185,7 +197,7 @@ def operaciones(produccion_id):
         detenida = estado == EN_CURSO and abierta is not None
 
         puede_terminar = estado == EN_CURSO and transcurrido >= estandar and abierta is None
-        puede_parar = estado == EN_CURSO and abierta is None and r.codigo not in OPERACIONES_ESPERA
+        puede_parar = estado == EN_CURSO and abierta is None and tipos.get(r.id_ruta) != TIPO_ESPERA
 
         filas.append({
             "ruta": r,
@@ -231,7 +243,7 @@ def operacion_iniciar(produccion_id, ruta_id):
     hechas = {e.ruta_id: e for e in ejecucion_operacion.obtener_ejecuciones_por_produccion(produccion_id)}
 
     anteriores = [r for r in rutas if ruta is not None and r.secuencia < ruta.secuencia]
-    secuencia_calidad = next((r.secuencia for r in rutas if r.codigo == OPERACION_CALIDAD), None)
+    secuencia_calidad = _secuencia_calidad(rutas, bom_operacion.obtener_tipos_por_orden(registro.ordenp_id))
 
     if ruta is None or ruta.ordenp_id != registro.ordenp_id or ruta.estado != ACTIVO:
         flash("La operación no pertenece a esta orden", "error")
@@ -303,7 +315,7 @@ def parada_iniciar(produccion_id):
 
     if en_curso is None:
         flash("No hay una operación en curso que detener", "error")
-    elif en_curso.ruta_codigo in OPERACIONES_ESPERA:
+    elif en_curso.ruta_tipo == TIPO_ESPERA:
         flash("No se registran paradas durante el reposo: el producto está esperando, no la línea", "error")
     elif _parada_abierta(paradas) is not None:
         flash("Ya hay una parada abierta", "error")

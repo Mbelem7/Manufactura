@@ -521,6 +521,12 @@ Detalle BOM | Manufactura
                             Operaciones de este producto, en orden. Cada orden de producción que use esta lista
                             de materiales las recibe automáticamente; cambiarlas aquí no modifica las órdenes ya creadas.
                         </p>
+
+                        <p class="text-muted small mb-0 mt-2">
+                            <strong>Tipo:</strong> Trabajo cuenta en el OEE y admite paradas. Espera (reposo) no admite
+                            paradas y queda fuera del OEE. Control de calidad hace que las operaciones siguientes
+                            exijan un lote liberado.
+                        </p>
                     </div>
 
                     <span class="badge rounded-pill text-bg-light">
@@ -542,6 +548,7 @@ Detalle BOM | Manufactura
                             <th>Sec.</th>
                             <th>Código</th>
                             <th>Centro de trabajo</th>
+                            <th>Tipo</th>
                             <th>Tiempo estándar (min)</th>
 
                             {% if editable %}
@@ -592,6 +599,20 @@ Detalle BOM | Manufactura
                                     {% for c in centros %}
                                     <option value="{{ c.id_centro }}" {{ 'selected' if c.id_centro == o.centro_id }}>
                                         {{ c.codigo }} — {{ c.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+
+                            <td style="width: 18%;">
+                                <select
+                                    form="operacion-{{ o.id_bom_operacion }}"
+                                    name="tipo"
+                                    class="form-select form-select-sm"
+                                >
+                                    {% for clave, nombre in tipos.items() %}
+                                    <option value="{{ clave }}" {{ 'selected' if o.tipo == clave }}>
+                                        {{ nombre }}
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -652,6 +673,16 @@ Detalle BOM | Manufactura
 
                             <td>{{ o.centro_codigo }} — {{ o.centro_nombre }}</td>
 
+                            <td>
+                                {% if o.tipo == 'espera' %}
+                                <span class="badge text-bg-info">{{ tipos.get(o.tipo, o.tipo) }}</span>
+                                {% elif o.tipo == 'calidad' %}
+                                <span class="badge text-bg-warning">{{ tipos.get(o.tipo, o.tipo) }}</span>
+                                {% else %}
+                                <span class="badge text-bg-light">{{ tipos.get(o.tipo, o.tipo) }}</span>
+                                {% endif %}
+                            </td>
+
                             <td>{{ "{:,.2f}".format(o.tiempo_estandar) }}</td>
 
                             {% endif %}
@@ -662,7 +693,7 @@ Detalle BOM | Manufactura
 
                         <tr>
 
-                            <td colspan="{{ 5 if editable else 4 }}">
+                            <td colspan="{{ 6 if editable else 5 }}">
 
                                 <div class="text-center py-4 text-muted">
                                     Este producto todavía no tiene ruta de fabricación.
@@ -736,7 +767,7 @@ Detalle BOM | Manufactura
                         </div>
 
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
 
                             <label
                                 for="nuevo_centro"
@@ -768,6 +799,28 @@ Detalle BOM | Manufactura
                         <div class="col-md-2">
 
                             <label
+                                for="nuevo_tipo"
+                                class="form-label"
+                            >
+                                Tipo
+                            </label>
+
+                            <select
+                                id="nuevo_tipo"
+                                name="tipo"
+                                class="form-select"
+                            >
+                                {% for clave, nombre in tipos.items() %}
+                                <option value="{{ clave }}">{{ nombre }}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-2">
+
+                            <label
                                 for="nuevo_tiempo"
                                 class="form-label"
                             >
@@ -788,14 +841,14 @@ Detalle BOM | Manufactura
                         </div>
 
 
-                        <div class="col-md-2 d-grid">
+                        <div class="col-12 d-flex justify-content-end">
 
                             <button
                                 type="submit"
                                 class="btn btn-outline-primary"
                             >
                                 <i class="bi bi-plus-lg me-1"></i>
-                                Agregar
+                                Agregar operación
                             </button>
 
                         </div>

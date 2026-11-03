@@ -50,7 +50,7 @@ def hora_del_minuto(inicio, minuto, factor, paradas, ahora):
 
 
 def calcular(operaciones, paradas, aceptadas, rechazadas, ahora, espera=()):
-    # operaciones: lista de dicts {codigo, secuencia, centro, inicio, fin, factor, estandar, estado}
+    # operaciones: lista de dicts {codigo, secuencia, centro, inicio, fin, factor, estandar, estado, espera}
     # paradas: lista de dicts {inicio, fin, tipo, motivo, centro}
     # aceptadas / rechazadas: None mientras la ejecucion no termine
     # espera: codigos de las operaciones de espera, que quedan fuera del OEE
@@ -61,7 +61,8 @@ def calcular(operaciones, paradas, aceptadas, rechazadas, ahora, espera=()):
     for op in sorted(operaciones, key=lambda o: o["secuencia"]):
         factor = op["factor"]
         bruto = ((op["fin"] or ahora) - op["inicio"]).total_seconds() / 60 * factor
-        es_espera = op["codigo"] in espera
+        # Cada operacion declara si es de espera; por compatibilidad tambien se admite una lista de codigos
+        es_espera = op.get("espera", op["codigo"] in espera)
 
         detenido = 0.0
         if not es_espera:
