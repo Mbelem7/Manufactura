@@ -17,7 +17,8 @@ from modulos import (
     transacciones,
     control_calidad,
     ejecucion_operacion,
-    bom_etapa
+    bom_etapa,
+    bom_operacion
 )
 # Se importa con otro nombre porque la ruta de abajo se llama "bom"
 # y pisaria el modulo si tuvieran el mismo nombre
@@ -218,6 +219,8 @@ def bom_detalle(bom_id):
         bom=registro,
         componentes=bom_etapa.obtener_componentes_con_etapa(bom_id),
         etapas=ETAPAS,
+        operaciones=bom_operacion.obtener_operaciones_por_bom(bom_id),
+        centros=centro_trabajo.obtener_centros_trabajo_por_estado(ACTIVO),
         materias_primas=[
             p for p in producto.obtener_productos_por_estado(ACTIVO)
             if p.tipo_producto == TIPO_MATERIA_PRIMA
@@ -330,6 +333,89 @@ def bom_componente_eliminar(detalle_id):
     return redirect(url_for("produccion.bom_detalle", bom_id=detalle.bom_id))
 
 
+# Ruta de fabricacion del BOM
+# Las operaciones se definen una vez por producto, en su BOM. Al crear una orden se copian a ella.
+
+def _datos_operacion_bom(bom_id, operacion_id=None):
+    # Lee y valida el formulario; si algo falla avisa y devuelve None
+    codigo = _texto("codigo")
+    tiempo = _decimal_positivo(request.form.get("tiempo_estandar"))
+    secuencia = request.form.get("secuencia", type=int)
+    centro_id = request.form.get("centro_id", type=int)
+
+    centro = centro_trabajo.obtener_un_centro_trabajo(centro_id) if centro_id else None
+
+    if not codigo or tiempo is None or not secuencia or secuencia < 1:
+        flash("Complete secuencia, código y tiempo estándar (mayor a 0)", "error")
+        return None
+
+    if centro is None or centro.estado != ACTIVO:
+        flash("Debe elegir un centro de trabajo activo", "error")
+        return None
+
+    otras = [o for o in bom_operacion.obtener_operaciones_por_bom(bom_id) if o.id_bom_operacion != operacion_id]
+
+    if any(o.codigo == codigo for o in otras):
+        flash("Ya hay una operación con ese código en la ruta de este BOM", "error")
+        return None
+
+    if any(o.secuencia == secuencia for o in otras):
+        flash("Ya hay una operación con esa secuencia en la ruta de este BOM", "error")
+        return None
+
+    return {
+        "codigo": codigo,
+        "secuencia": secuencia,
+        "centro_id": centro_id,
+        "tiempo_estandar": tiempo
+    }
+
+
+@produccion_bp.route("/bom/<int:bom_id>/operaciones", methods=["POST"])
+def bom_operacion_agregar(bom_id):
+    # Form: codigo, secuencia, centro_id, tiempo_estandar
+    registro = _bom_o_404(bom_id)
+
+    if registro.estado != ACTIVO:
+        flash("Solo se puede cambiar la ruta de un BOM activo", "error")
+    else:
+        datos = _datos_operacion_bom(bom_id)
+
+        if datos is not None:
+            bom_operacion.insertar_operacion(bom_id, fecha=datetime.now(), **datos)
+            flash("Operación agregada a la ruta", "exito")
+
+    return redirect(url_for("produccion.bom_detalle", bom_id=bom_id))
+
+
+@produccion_bp.route("/bom/operaciones/<int:operacion_id>/actualizar", methods=["POST"])
+def bom_operacion_actualizar(operacion_id):
+    # Form: codigo, secuencia, centro_id, tiempo_estandar. Las ordenes ya creadas no cambian.
+    operacion = bom_operacion.obtener_una_operacion(operacion_id)
+    if operacion is None or operacion.estado != ACTIVO:
+        abort(404)
+
+    datos = _datos_operacion_bom(operacion.bom_id, operacion_id)
+
+    if datos is not None:
+        bom_operacion.actualizar_operacion(operacion_id, fecha=datetime.now(), **datos)
+        flash("Operación actualizada", "exito")
+
+    return redirect(url_for("produccion.bom_detalle", bom_id=operacion.bom_id))
+
+
+@produccion_bp.route("/bom/operaciones/<int:operacion_id>/baja", methods=["POST"])
+def bom_operacion_baja(operacion_id):
+    operacion = bom_operacion.obtener_una_operacion(operacion_id)
+    if operacion is None:
+        abort(404)
+
+    bom_operacion.actualizar_estado_operacion(operacion_id, INACTIVO, datetime.now())
+    flash("Operación dada de baja de la ruta", "exito")
+
+    return redirect(url_for("produccion.bom_detalle", bom_id=operacion.bom_id))
+
+
 # CENTROS DE TRABAJO
 
 @produccion_bp.route("/centros-trabajo")
@@ -429,7 +515,6 @@ def _datos_ruta(ordenp_id, ruta_id=None):
 
     orden = orden_produccion.obtener_un_orden_produccion(ordenp_id) if ordenp_id else None
     centro = centro_trabajo.obtener_un_centro_trabajo(centro_id) if centro_id else None
-    otra = ruta_operacion.obtener_ruta_operacion_por_codigo(codigo) if codigo else None
 
     if not codigo or tiempo is None or not secuencia or secuencia < 1:
         flash("Complete código, tiempo estándar (mayor a 0) y secuencia", "error")
@@ -443,11 +528,11 @@ def _datos_ruta(ordenp_id, ruta_id=None):
         flash("Debe elegir un centro de trabajo activo", "error")
         return None
 
-    if otra is not None and otra.id_ruta != ruta_id:
-        flash("Ya existe una operación con ese código", "error")
+    mismas = ruta_operacion.obtener_rutas_operacion_por_ordenp(ordenp_id)
+    if any(r.codigo == codigo and r.estado == ACTIVO and r.id_ruta != ruta_id for r in mismas):
+        flash("Ya hay una operación con ese código en la orden", "error")
         return None
 
-    mismas = ruta_operacion.obtener_rutas_operacion_por_ordenp(ordenp_id)
     if any(r.secuencia == secuencia and r.estado == ACTIVO and r.id_ruta != ruta_id for r in mismas):
         flash("Ya hay una operación con esa secuencia en la orden", "error")
         return None
@@ -600,10 +685,14 @@ def orden_nueva():
                 orden_id = orden_produccion.insertar_orden_produccion(
                     cantidad, OP_PENDIENTE, ahora, ahora, producto_id, lote_id, bom_id
                 )
+                # Las operaciones de la orden se copian de la ruta del BOM
+                copiadas = bom_operacion.copiar_a_orden(bom_id, orden_id, ahora)
             except (ValueError, IntegrityError) as e:
                 flash("No se pudo crear la orden: " + str(e), "error")
             else:
                 flash("Orden de producción creada", "exito")
+                if copiadas == 0:
+                    flash("El BOM no tiene ruta de fabricación: agréguela en su detalle para poder ejecutar la orden", "error")
                 return redirect(url_for("produccion.orden_detalle", orden_id=orden_id))
 
         return redirect(url_for("produccion.orden_nueva"))
@@ -704,6 +793,13 @@ def orden_editar(orden_id):
                     lote_id=lote_id,
                     bom_id=bom_id
                 )
+
+                # Si cambio el BOM y el nuevo tiene ruta, la ruta de la orden pasa a ser la suya
+                if bom_id != orden.bom_id and bom_operacion.obtener_operaciones_por_bom(bom_id):
+                    for r in ruta_operacion.obtener_rutas_operacion_por_ordenp(orden_id):
+                        if r.estado == ACTIVO:
+                            ruta_operacion.actualizar_estado_ruta_operacion(r.id_ruta, INACTIVO, ahora)
+                    bom_operacion.copiar_a_orden(bom_id, orden_id, ahora)
             except (ValueError, IntegrityError) as e:
                 flash("No se pudo actualizar la orden: " + str(e), "error")
             else:

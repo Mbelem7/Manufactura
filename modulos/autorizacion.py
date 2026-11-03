@@ -79,6 +79,7 @@ _asignar("""
     produccion.bom_componente_actualizar produccion.bom_componente_eliminar
     produccion.centro_trabajo_baja produccion.ruta_baja
     produccion.orden_baja produccion.ejecucion_terminar
+    produccion.bom_operacion_agregar produccion.bom_operacion_actualizar produccion.bom_operacion_baja
 """, escribir=AMBOS)
 
 # Calidad: revisión de lotes (operación OP-040). Cualquier rol puede registrar una

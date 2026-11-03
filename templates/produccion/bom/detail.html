@@ -504,6 +504,312 @@ Detalle BOM | Manufactura
 
         </div>
 
+
+        {# Ruta de fabricacion: se define una vez por producto y se copia a cada orden #}
+        <div class="app-card mt-4">
+
+            <div class="p-4 border-bottom">
+
+                <div class="d-flex align-items-center justify-content-between">
+
+                    <div>
+                        <h5 class="mb-1">
+                            Ruta de fabricación
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Operaciones de este producto, en orden. Cada orden de producción que use esta lista
+                            de materiales las recibe automáticamente; cambiarlas aquí no modifica las órdenes ya creadas.
+                        </p>
+                    </div>
+
+                    <span class="badge rounded-pill text-bg-light">
+                        {{ operaciones|length }} {{ 'operación' if operaciones|length == 1 else 'operaciones' }}
+                        · {{ "{:,.0f}".format(operaciones|sum(attribute='tiempo_estandar')) }} min
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Sec.</th>
+                            <th>Código</th>
+                            <th>Centro de trabajo</th>
+                            <th>Tiempo estándar (min)</th>
+
+                            {% if editable %}
+                            <th class="text-end">Acciones</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for o in operaciones %}
+
+                        <tr>
+
+                            {% if editable %}
+
+                            <td style="width: 12%;">
+                                <input
+                                    form="operacion-{{ o.id_bom_operacion }}"
+                                    type="number"
+                                    name="secuencia"
+                                    class="form-control form-control-sm"
+                                    min="1"
+                                    step="1"
+                                    value="{{ o.secuencia }}"
+                                    required
+                                >
+                            </td>
+
+                            <td style="width: 16%;">
+                                <input
+                                    form="operacion-{{ o.id_bom_operacion }}"
+                                    type="text"
+                                    name="codigo"
+                                    class="form-control form-control-sm"
+                                    value="{{ o.codigo }}"
+                                    required
+                                >
+                            </td>
+
+                            <td>
+                                <select
+                                    form="operacion-{{ o.id_bom_operacion }}"
+                                    name="centro_id"
+                                    class="form-select form-select-sm"
+                                    required
+                                >
+                                    {% for c in centros %}
+                                    <option value="{{ c.id_centro }}" {{ 'selected' if c.id_centro == o.centro_id }}>
+                                        {{ c.codigo }} — {{ c.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+
+                            <td style="width: 16%;">
+                                <input
+                                    form="operacion-{{ o.id_bom_operacion }}"
+                                    type="number"
+                                    name="tiempo_estandar"
+                                    class="form-control form-control-sm"
+                                    min="0.01"
+                                    step="0.01"
+                                    value="{{ '%.2f'|format(o.tiempo_estandar) }}"
+                                    required
+                                >
+                            </td>
+
+                            <td class="text-end text-nowrap">
+
+                                <form
+                                    id="operacion-{{ o.id_bom_operacion }}"
+                                    method="POST"
+                                    action="{{ url_for('produccion.bom_operacion_actualizar', operacion_id=o.id_bom_operacion) }}"
+                                    class="d-inline"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-light"
+                                        title="Guardar cambios"
+                                    >
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('produccion.bom_operacion_baja', operacion_id=o.id_bom_operacion) }}"
+                                    class="d-inline"
+                                    onsubmit="return confirm('¿Dar de baja esta operación de la ruta?');"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-light text-danger"
+                                        title="Dar de baja"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+
+                            </td>
+
+                            {% else %}
+
+                            <td>{{ o.secuencia }}</td>
+
+                            <td class="fw-semibold">{{ o.codigo }}</td>
+
+                            <td>{{ o.centro_codigo }} — {{ o.centro_nombre }}</td>
+
+                            <td>{{ "{:,.2f}".format(o.tiempo_estandar) }}</td>
+
+                            {% endif %}
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+
+                            <td colspan="{{ 5 if editable else 4 }}">
+
+                                <div class="text-center py-4 text-muted">
+                                    Este producto todavía no tiene ruta de fabricación.
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            {% if editable %}
+
+            <div class="p-4 border-top">
+
+                <form
+                    method="POST"
+                    action="{{ url_for('produccion.bom_operacion_agregar', bom_id=bom.id_bom) }}"
+                >
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-2">
+
+                            <label
+                                for="nueva_secuencia"
+                                class="form-label"
+                            >
+                                Secuencia
+                            </label>
+
+                            <input
+                                type="number"
+                                id="nueva_secuencia"
+                                name="secuencia"
+                                class="form-control"
+                                min="1"
+                                step="1"
+                                value="{{ (operaciones|map(attribute='secuencia')|max + 10) if operaciones else 10 }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-2">
+
+                            <label
+                                for="nueva_operacion_codigo"
+                                class="form-label"
+                            >
+                                Código
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nueva_operacion_codigo"
+                                name="codigo"
+                                class="form-control"
+                                placeholder="OP-010"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <label
+                                for="nuevo_centro"
+                                class="form-label"
+                            >
+                                Centro de trabajo
+                            </label>
+
+                            <select
+                                id="nuevo_centro"
+                                name="centro_id"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Seleccione un centro
+                                </option>
+
+                                {% for c in centros %}
+                                <option value="{{ c.id_centro }}">
+                                    {{ c.codigo }} — {{ c.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-md-2">
+
+                            <label
+                                for="nuevo_tiempo"
+                                class="form-label"
+                            >
+                                Tiempo (min)
+                            </label>
+
+                            <input
+                                type="number"
+                                id="nuevo_tiempo"
+                                name="tiempo_estandar"
+                                class="form-control"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="col-md-2 d-grid">
+
+                            <button
+                                type="submit"
+                                class="btn btn-outline-primary"
+                            >
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Agregar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
     </div>
 
 </div>
