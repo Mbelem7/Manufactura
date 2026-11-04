@@ -2,6 +2,7 @@ from app import db
 from sqlalchemy import text
 from decimal import Decimal
 from .inventario import aumentar_inventario, disminuir_inventario, descontar_inventario_fifo
+from .inventario_vigente import descontar_inventario_vigente
 
 
 # Flujos que tocan varias tablas: todo se guarda junto o no se guarda nada.
@@ -254,7 +255,7 @@ def finalizar_produccion(id_produccion, fecha_fin, cantidad_aceptada, cantidad_r
         unidades = Decimal(str(cantidad_aceptada + cantidad_rechazada))
 
         for c in componentes:
-            descontar_inventario_fifo(almacen_mp_id, c.producto_component_id,
+            descontar_inventario_vigente(almacen_mp_id, c.producto_component_id,
                                       c.cantidad * unidades, fecha_fin, commit=False)
 
         if cantidad_aceptada > 0:

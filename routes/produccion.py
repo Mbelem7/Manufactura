@@ -18,7 +18,8 @@ from modulos import (
     control_calidad,
     ejecucion_operacion,
     bom_etapa,
-    bom_operacion
+    bom_operacion,
+    inventario_vigente
 )
 # Se importa con otro nombre porque la ruta de abajo se llama "bom"
 # y pisaria el modulo si tuvieran el mismo nombre
@@ -145,8 +146,9 @@ def _orden_o_404(orden_id):
         abort(404)
     return orden
 
+
 def _faltantes_de_materia_prima(bom_id, cantidad):
-    # Materiales de la lista de materiales cuyo stock no alcanza para fabricar esa cantidad
+    # Materiales de la lista de materiales cuyo stock VIGENTE (sin lotes vencidos) no alcanza para fabricar esa cantidad
     faltantes = []
 
     if not bom_id:
@@ -154,7 +156,7 @@ def _faltantes_de_materia_prima(bom_id, cantidad):
 
     for c in detalle_bom.obtener_detalles_bom_por_bom(bom_id):
         necesaria = c.cantidad * cantidad
-        disponible = inventario.obtener_stock_de_producto(c.producto_component_id)
+        disponible = inventario_vigente.obtener_stock_vigente(c.producto_component_id)
 
         if disponible < necesaria:
             faltantes.append(
@@ -164,6 +166,7 @@ def _faltantes_de_materia_prima(bom_id, cantidad):
             )
 
     return faltantes
+
 
 # BOM
 
@@ -755,18 +758,20 @@ def orden_nueva():
 def orden_detalle(orden_id):
     orden = _orden_o_404(orden_id)
 
-    # Materia prima necesaria segun el BOM vs lo que hay en inventario
+    # Materia prima necesaria segun el BOM vs lo que hay VIGENTE en inventario (sin lotes vencidos)
     requerimientos = []
     if orden.bom_id:
         for c in detalle_bom.obtener_detalles_bom_por_bom(orden.bom_id):
             necesaria = c.cantidad * orden.cantidad
-            disponible = inventario.obtener_stock_de_producto(c.producto_component_id)
+            disponible = inventario_vigente.obtener_stock_vigente(c.producto_component_id)
+            vencida = inventario_vigente.obtener_stock_vencido(c.producto_component_id)
             requerimientos.append({
                 "codigo": c.producto_codigo,
                 "nombre": c.producto_nombre,
                 "unidad": c.producto_unidad_medida,
                 "necesaria": necesaria,
                 "disponible": disponible,
+                "vencida": vencida,
                 "suficiente": disponible >= necesaria
             })
 
