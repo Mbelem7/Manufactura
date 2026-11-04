@@ -132,7 +132,8 @@ def obtener_inventario_por_almacen(almacen_id):
                 pr.codigo AS producto_codigo,
                 pr.nombre AS producto_nombre,
                 pr.unidad_medida AS producto_unidad_medida,
-                lo.codigo AS lote_codigo
+                lo.codigo AS lote_codigo,
+                lo.fecha_vencimiento AS lote_fecha_vencimiento
             FROM INVENTARIO t
             INNER JOIN ALMACEN al ON al.id_almacen = t.almacen_id
             INNER JOIN PRODUCTO pr ON pr.id_producto = t.producto_id

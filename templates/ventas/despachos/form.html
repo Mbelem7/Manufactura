@@ -4,10 +4,15 @@
 
 {# ---- Preparacion de las filas sugeridas (solo al crear) ----
    pedido:    producto -> cantidad total que pide la orden
-   filas:     lotes sugeridos para cubrir lo pedido (se toman en el orden en que vienen)
-   faltantes: productos para los que no alcanza la existencia del almacen #}
+   sin_lote:  producto -> cantidad de las lineas viejas, que no guardaron lote
+   saldo:     lote -> existencia que queda despues de lo ya propuesto
+   filas:     primero el lote de cada linea de la orden; las lineas sin lote se
+              cubren por FIFO (lotes_disponibles ya viene en ese orden y sin vencidos)
+   faltantes: lo que no alcanza a cubrir el almacen #}
 {% set pedido = {} %}
 {% set nombres = {} %}
+{% set sin_lote = {} %}
+{% set saldo = {} %}
 {% set filas = [] %}
 {% set faltantes = [] %}
 
@@ -17,13 +22,35 @@
 {% endfor %}
 
 {% if almacen_id %}
-    {% for producto_id, cantidad in pedido.items() %}
+    {% for l in lotes_disponibles %}
+        {% set _ = saldo.update({l.lote_id: l.cantidad}) %}
+    {% endfor %}
+
+    {% for d in detalles_orden %}
+        {% if d.lote_id %}
+            {% set tomar = [d.cantidad, saldo.get(d.lote_id, 0)]|min %}
+
+            {% if tomar > 0 %}
+                {% set _ = filas.append({'lote_id': d.lote_id, 'cantidad': tomar}) %}
+                {% set _ = saldo.update({d.lote_id: saldo[d.lote_id] - tomar}) %}
+            {% endif %}
+
+            {% if tomar < d.cantidad %}
+                {% set _ = faltantes.append({'producto_id': d.producto_id, 'falta': d.cantidad - tomar, 'lote': d.lote_codigo}) %}
+            {% endif %}
+        {% else %}
+            {% set _ = sin_lote.update({d.producto_id: sin_lote.get(d.producto_id, 0) + d.cantidad}) %}
+        {% endif %}
+    {% endfor %}
+
+    {% for producto_id, cantidad in sin_lote.items() %}
         {% set pend = namespace(v=cantidad) %}
 
         {% for l in lotes_disponibles if l.producto_id == producto_id %}
-            {% if pend.v > 0 %}
-                {% set tomar = [pend.v, l.cantidad]|min %}
+            {% if pend.v > 0 and saldo[l.lote_id] > 0 %}
+                {% set tomar = [pend.v, saldo[l.lote_id]]|min %}
                 {% set _ = filas.append({'lote_id': l.lote_id, 'cantidad': tomar}) %}
+                {% set _ = saldo.update({l.lote_id: saldo[l.lote_id] - tomar}) %}
                 {% set pend.v = pend.v - tomar %}
             {% endif %}
         {% endfor %}
@@ -266,6 +293,9 @@
             {% for f in faltantes %}
             <div>
                 {{ nombres[f.producto_id] }}: faltan {{ "{:,.2f}".format(f.falta) }}
+                {% if f.lote %}
+                    del lote {{ f.lote }}, elegido en la orden (vencido o sin existencia suficiente)
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -289,8 +319,8 @@
                     </h5>
 
                     <p class="text-muted mb-0">
-                        Seleccioná los lotes y cantidades que saldrán del almacén.
-                        Se sugiere cubrir lo pedido con los lotes disponibles.
+                        Salen los lotes elegidos en la orden de venta. Las órdenes
+                        sin lote se sugieren por FIFO, del más antiguo al más nuevo.
                     </p>
                 </div>
 

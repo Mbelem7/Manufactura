@@ -180,13 +180,26 @@ def _cliente_activo(cliente_id):
     return cli
 
 
+def _vencido(fecha_vencimiento):
+    return fecha_vencimiento is not None and fecha_vencimiento < datetime.now().date()
+
+
+def _lotes_para_despacho(almacen_id):
+    # Lotes del almacen con existencia y sin vencer, en orden FIFO (primero lo que entro antes)
+    filas = [
+        f for f in inventario.obtener_inventario_por_almacen(almacen_id)
+        if f.lote_id and f.cantidad > 0 and not _vencido(f.lote_fecha_vencimiento)
+    ]
+    return sorted(filas, key=lambda f: (f.fecha_creacion or datetime.min, f.id_inventario))
+
+
 def _error_despacho(ordenv_id, almacen_id, lineas):
-    # Revisa que lo que se despacha exista en el almacen y coincida con lo ordenado.
+    # Revisa que lo que se despacha exista en el almacen, no este vencido y coincida con lo ordenado.
     # Devuelve el mensaje de error, o None si todo esta bien.
     disponibles = {}
     for f in inventario.obtener_inventario_por_almacen(almacen_id):
         if f.lote_id:
-            disponibles[f.lote_id] = (f.producto_id, f.cantidad)
+            disponibles[f.lote_id] = f
 
     por_lote = {}
     for l in lineas:
@@ -195,18 +208,32 @@ def _error_despacho(ordenv_id, almacen_id, lineas):
     por_producto = {}
     for lote_id, cantidad in por_lote.items():
         if lote_id not in disponibles:
-            return "El lote " + str(lote_id) + " no tiene existencias en ese almacén"
+            return "Uno de los lotes elegidos no tiene existencias en ese almacén"
 
-        producto_id, existencia = disponibles[lote_id]
+        fila = disponibles[lote_id]
 
-        if cantidad > existencia:
-            return "Existencia insuficiente en el lote " + str(lote_id)
+        if _vencido(fila.lote_fecha_vencimiento):
+            return "El lote " + fila.lote_codigo + " está vencido y no se puede despachar"
 
-        por_producto[producto_id] = por_producto.get(producto_id, Decimal("0")) + cantidad
+        if cantidad > fila.cantidad:
+            return "Existencia insuficiente en el lote " + fila.lote_codigo
+
+        por_producto[fila.producto_id] = por_producto.get(fila.producto_id, Decimal("0")) + cantidad
 
     ordenado = {}
+    por_lote_orden = {}
     for d in detalle_orden_venta.obtener_detalles_orden_venta_por_ordenv(ordenv_id):
         ordenado[d.producto_id] = ordenado.get(d.producto_id, Decimal("0")) + d.cantidad
+        if d.lote_id:
+            actual = por_lote_orden.get(d.lote_id, (d.lote_codigo, Decimal("0")))
+            por_lote_orden[d.lote_id] = (d.lote_codigo, actual[1] + d.cantidad)
+
+    # El lote que quedo en la orden es el que sale (el FIFO se decide al vender).
+    # Las lineas viejas, sin lote, se pueden cubrir con cualquier lote vigente.
+    for lote_id, (codigo, cantidad) in por_lote_orden.items():
+        if por_lote.get(lote_id, Decimal("0")) < cantidad:
+            return ("Debe despachar " + str(cantidad) + " del lote " + codigo
+                    + ", como indica la orden de venta")
 
     # Se despacha la orden completa de una vez (quitar esta comparacion para permitir parciales)
     if por_producto != ordenado:
@@ -591,12 +618,7 @@ def despacho_nuevo():
     almacen_id = request.args.get("almacen_id", type=int)
     orden = orden_venta.obtener_un_orden_venta(orden_id) if orden_id else None
 
-    lotes_disponibles = []
-    if almacen_id:
-        lotes_disponibles = [
-            f for f in inventario.obtener_inventario_por_almacen(almacen_id)
-            if f.lote_id and f.cantidad > 0
-        ]
+    lotes_disponibles = _lotes_para_despacho(almacen_id) if almacen_id else []
 
     return render_template(
         "ventas/despachos/form.html",

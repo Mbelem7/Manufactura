@@ -348,6 +348,15 @@ a {
     border-color: #edf0f2;
 }
 
+/* Lineas de la orden de venta: el aviso de FIFO bajo el lote no debe mover los campos */
+.app-card .table tbody .sale-item-row td {
+    vertical-align: top;
+}
+
+.app-card .table tbody .sale-item-row .remove-sale-item {
+    margin-top: 3px;
+}
+
 .app-card .table tbody tr:hover {
     background-color: #faf8fa;
 }

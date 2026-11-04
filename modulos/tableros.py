@@ -293,6 +293,8 @@ def existencias_por_almacen():
 
 
 def lotes_mas_antiguos(limite=5):
+    # Sin vencidos: esta lista dice que conviene usar, y un vencido ya no se puede despachar.
+    # Mismo orden FIFO que la venta y el despacho: primero lo que entro antes al inventario
 
     return _consultar("""
         SELECT
@@ -300,12 +302,13 @@ def lotes_mas_antiguos(limite=5):
             pr.codigo AS producto_codigo,
             pr.nombre AS producto_nombre,
             pr.unidad_medida,
-            lo.fecha_creacion,
+            MIN(i.fecha_creacion) AS fecha_ingreso,
             SUM(i.cantidad) AS existencia
         FROM INVENTARIO i
         INNER JOIN LOTE lo ON lo.id_lote = i.lote_id
         INNER JOIN PRODUCTO pr ON pr.id_producto = lo.producto_id
         WHERE i.cantidad > 0
-        GROUP BY lo.codigo, pr.codigo, pr.nombre, pr.unidad_medida, lo.fecha_creacion
-        ORDER BY lo.fecha_creacion
+          AND (lo.fecha_vencimiento IS NULL OR lo.fecha_vencimiento >= CURRENT_DATE)
+        GROUP BY lo.codigo, pr.codigo, pr.nombre, pr.unidad_medida
+        ORDER BY MIN(i.fecha_creacion)
         LIMIT :limite""", {'limite': limite}).fetchall()
