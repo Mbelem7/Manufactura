@@ -311,7 +311,7 @@ Detalle de orden de venta | Manufactura
                                     {{ "C$ {:,.2f}".format(d.cantidad * d.precio_unitario) }}
                                 </td>
 
-                                {# existencia actual del producto en todos los almacenes #}
+                                {# existencia vigente del producto en todos los almacenes (sin lotes vencidos) #}
                                 {% set disponible = stock.get(d.producto_id, 0) %}
 
                                 <td class="text-end {{ 'text-danger' if editable and disponible < d.cantidad else 'text-muted' }}">

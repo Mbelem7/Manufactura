@@ -280,7 +280,8 @@ def obtener_existencias_por_producto_almacen():
 
 
 def obtener_stock_actual():
-    # Stock total por producto (suma de todos los almacenes y lotes)
+    # Stock por producto en todos los almacenes. Lo que vence es el lote: stock_actual
+    # cuenta solo lotes vigentes y stock_vencido lo que sigue en bodega ya vencido
 
     resultado = db.session.execute(
         text("""
@@ -290,9 +291,15 @@ def obtener_stock_actual():
                 pr.nombre,
                 pr.tipo_producto,
                 pr.unidad_medida,
-                COALESCE(SUM(i.cantidad), 0) AS stock_actual
+                COALESCE(SUM(i.cantidad) FILTER (
+                    WHERE lo.fecha_vencimiento IS NULL OR lo.fecha_vencimiento >= CURRENT_DATE
+                ), 0) AS stock_actual,
+                COALESCE(SUM(i.cantidad) FILTER (
+                    WHERE lo.fecha_vencimiento < CURRENT_DATE
+                ), 0) AS stock_vencido
             FROM PRODUCTO pr
             LEFT JOIN INVENTARIO i ON i.producto_id = pr.id_producto
+            LEFT JOIN LOTE lo ON lo.id_lote = i.lote_id
             GROUP BY pr.id_producto, pr.codigo, pr.nombre, pr.tipo_producto, pr.unidad_medida
             ORDER BY pr.nombre
         """)

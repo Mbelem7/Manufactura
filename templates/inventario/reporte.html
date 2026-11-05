@@ -132,6 +132,12 @@ Reporte de inventario | Manufactura
                     <td>{{ s.tipo_producto|replace('_', ' ')|capitalize }}</td>
                     <td class="text-end">
                         {{ "{:,.2f}".format(s.stock_actual) }} {{ s.unidad_medida }}
+
+                        {% if s.stock_vencido > 0 %}
+                        <div class="small text-danger">
+                            Vencido: {{ "{:,.2f}".format(s.stock_vencido) }} {{ s.unidad_medida }}
+                        </div>
+                        {% endif %}
                     </td>
                 </tr>
 

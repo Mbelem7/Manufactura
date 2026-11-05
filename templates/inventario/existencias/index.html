@@ -270,7 +270,8 @@ Existencias | Manufactura
         </h5>
 
         <p class="text-muted mb-0">
-            Existencia total de cada producto en todos los almacenes.
+            Existencia vigente de cada producto en todos los almacenes.
+            Los lotes vencidos no se cuentan y se indican aparte.
         </p>
 
     </div>
@@ -303,6 +304,12 @@ Existencias | Manufactura
                     <td class="text-end {{ 'text-muted' if s.stock_actual == 0 }}">
                         {{ "{:,.2f}".format(s.stock_actual) }}
                         {{ s.unidad_medida }}
+
+                        {% if s.stock_vencido > 0 %}
+                        <div class="small text-danger">
+                            Vencido: {{ "{:,.2f}".format(s.stock_vencido) }} {{ s.unidad_medida }}
+                        </div>
+                        {% endif %}
                     </td>
 
                 </tr>
