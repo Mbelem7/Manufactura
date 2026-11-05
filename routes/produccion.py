@@ -954,11 +954,19 @@ def ejecucion_terminar(produccion_id):
     alm_pt = almacen.obtener_un_almacen(almacen_pt_id) if almacen_pt_id else None
     control = control_calidad.obtener_ultimo_control_por_orden(registro.ordenp_id)
     pendientes = ejecucion_operacion.contar_operaciones_pendientes(produccion_id)
+    orden = orden_produccion.obtener_un_orden_produccion(registro.ordenp_id)
 
     if registro.fecha_fin is not None:
         flash("Esta ejecución ya fue terminada", "error")
     elif aceptada is None or rechazada is None or aceptada < 0 or rechazada < 0 or aceptada + rechazada == 0:
         flash("Indique cantidades aceptada y rechazada válidas (enteros)", "error")
+    elif aceptada + rechazada > orden.cantidad:
+        # Puede rendir menos de lo ordenado, pero no mas: para producir mas se crea otra orden
+        flash(
+            "No se puede terminar: aceptadas más rechazadas (" + str(aceptada + rechazada)
+            + ") superan la cantidad de la orden (" + str(orden.cantidad) + ")",
+            "error"
+        )
     elif alm_mp is None or alm_mp.estado != ACTIVO or alm_pt is None or alm_pt.estado != ACTIVO:
         flash("Elija los almacenes de materia prima y de producto terminado", "error")
     elif not _tiene_ruta(registro.ordenp_id):
@@ -972,7 +980,6 @@ def ejecucion_terminar(produccion_id):
     else:
         try:
             # Lo aceptado entra al lote de la orden: no puede pasar de su capacidad
-            orden = orden_produccion.obtener_un_orden_produccion(registro.ordenp_id)
             lote.revisar_capacidad(orden.producto_id, aceptada)
 
             transacciones.finalizar_produccion(
