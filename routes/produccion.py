@@ -147,6 +147,11 @@ def _orden_o_404(orden_id):
     return orden
 
 
+def _tiene_ruta(ordenp_id):
+    # Sin operaciones activas no hay nada que ejecutar: la orden no se puede fabricar
+    return any(r.estado == ACTIVO for r in ruta_operacion.obtener_rutas_operacion_por_ordenp(ordenp_id))
+
+
 def _faltantes_de_materia_prima(bom_id, cantidad):
     # Materiales de la lista de materiales cuyo stock VIGENTE (sin lotes vencidos) no alcanza para fabricar esa cantidad
     faltantes = []
@@ -908,6 +913,8 @@ def ejecucion_nueva():
             flash("Debe elegir una orden pendiente o en proceso", "error")
         elif not orden.bom_id:
             flash("La orden no tiene BOM asociado", "error")
+        elif not _tiene_ruta(ordenp_id):
+            flash("La orden no tiene ruta de fabricación: agregue sus operaciones antes de iniciar", "error")
         elif any(e.ordenp_id == ordenp_id for e in produccion.obtener_produccion_en_curso()):
             flash("Esa orden ya tiene una ejecución en curso", "error")
         elif faltantes:
@@ -954,6 +961,8 @@ def ejecucion_terminar(produccion_id):
         flash("Indique cantidades aceptada y rechazada válidas (enteros)", "error")
     elif alm_mp is None or alm_mp.estado != ACTIVO or alm_pt is None or alm_pt.estado != ACTIVO:
         flash("Elija los almacenes de materia prima y de producto terminado", "error")
+    elif not _tiene_ruta(registro.ordenp_id):
+        flash("No se puede terminar: la orden no tiene ruta de fabricación", "error")
     elif pendientes > 0 and not (control is not None and control.disposicion == "scrap"):
         flash("No se puede terminar: faltan operaciones de la ruta por terminar", "error")
     elif control is None or control.disposicion not in ("liberacion", "scrap"):
